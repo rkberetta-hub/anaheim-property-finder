@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anaheim Commuter Dashboard</title>
+    <!-- Tailwind CSS for modern responsive utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for layout icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Main Navigation Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-sm">
+                    <i class="fa-solid fa-map-location-dot text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Anaheim Area Real Estate Terminal</h1>
+                    <p class="text-xs text-slate-400">Dynamic External JSON Feed Pipeline</p>
+                </div>
+            </div>
+            <div class="bg-slate-800 px-4 py-2 rounded-xl text-xs text-slate-300 border border-slate-700">
+                <i class="fa-solid fa-calculator text-blue-400 mr-1.5"></i> Est. Interest Rate: <span class="text-white font-bold">6.48%</span> | 15% Down Payment
+            </div>
+        </div>
+    </header>
+
+    <!-- App Layout Workspace -->
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- Sidebar Controls & Filtering Suite -->
+        <aside class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit lg:sticky lg:top-24">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-bold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-600"></i> Dashboard Filters
+                </h2>
+                <button id="reset-filters" class="text-xs text-blue-600 hover:underline font-semibold">Reset View</button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- Max Price Slider Component -->
+                <div>
+                    <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                        <span>Max Purchase Price</span> 
+                        <span id="price-lbl" class="text-blue-600 font-black text-sm">$550,000</span>
+                    </label>
+                    <input type="range" id="price-slider" min="300000" max="550000" step="5000" value="550000" 
+                           class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
+                </div>
+
+                <!-- Max Commute Radius Slider Component -->
+                <div>
+                    <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                        <span>Max Commute to Anaheim</span> 
+                        <span id="commute-lbl" class="text-blue-600 font-black text-sm">60 mins</span>
+                    </label>
+                    <input type="range" id="commute-slider" min="5" max="60" step="5" value="60" 
+                           class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
+                </div>
+
+                <!-- Minimum Bedrooms Filter Button Array -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Minimum Bedrooms</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" data-beds="2" class="bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-700 transition">2+ Beds</button>
+                        <button type="button" data-beds="3" class="bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition">3+ Beds</button>
+                    </div>
+                </div>
+
+                <!-- Sort Layout Selector Matrix -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Sort Results By</label>
+                    <select id="sort-picker" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="p-asc">Purchase Price: Low to High</option>
+                        <option value="p-desc">Purchase Price: High to Low</option>
+                        <option value="c-asc">Commute Profile: Shortest Drive</option>
+                        <option value="m-asc">Total Monthly Outflow: Lowest First</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Listing Output Matrix Grid -->
+        <section class="col-span-1 lg:col-span-3">
+            <div class="mb-4">
+                <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">
+                    Active Pipeline Results: <span id="results-count" class="text-slate-900 font-black">0</span> Matches Found
+                </p>
+            </div>
+
+            <!-- Card Render Container -->
+            <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Javascript maps file elements asynchronously right here -->
+            </div>
+
+            <!-- Zero State Error Fallback Display Component -->
+            <div id="empty-state" class="hidden text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+                <div class="text-slate-200 text-6xl mb-4"><i class="fa-solid fa-building-circle-exclamation"></i></div>
+                <h3 class="text-base font-bold text-slate-900 mb-1">No Properties Found Within Filter Range</h3>
+                <p class="text-slate-500 text-xs max-w-xs mx-auto">Adjust your price cap or travel criteria sliders to pull more regional listings from the active JSON feed.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Runtime Client Script Pipeline Logic -->
+    <script>
+        // Global runtime operational tracking references
+        let livePropertyFeed = [];
+        let activeMinBeds = 2;
+
+        // Underwriting Formula Constants
+        const INTEREST_RATE_APR = 0.0648; 
+        const DOWN_PAYMENT_FACTOR = 0.15;
+        const AMORTIZATION_MONTHS = 360;  // 30-Year Conventional Fixed Structure
+        const ESTIMATED_SOCAL_TAX = 0.012; // 1.2% Target Annual Assessment Escrow
+        const ESTIMATED_HAZARD_INS = 100;  // Static condo structural hazard premium/mo
+
+        /**
+         * Asynchronous Document Initialization 
+         * Pulls data from external file storage architecture on load
+         */
+        async function fetchExternalDataset() {
+            try {
+                const response = await fetch('listings.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP network pipe exception: status ${response.status}`);
+                }
+                livePropertyFeed = await response.json();
+                renderInterface();
+            } catch (err) {
+                console.error("Critical System Framework Alert: Waiting on listings.json execution snapshot.", err);
+                document.getElementById('card-grid').innerHTML = `
+                    <div class="col-span-full p-6 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Unable to resolve data link. Ensure your 'listings.json' file is compiled and resting in this same folder directory level.
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Dynamic Mortgage Amortization Calculator Engine
+         */
+        defCalculation = (price, hoaFee) => {
+            const principalLoanValue = price * (1 - DOWN_PAYMENT_FACTOR);
+            const monthlyPeriodicInt = INTEREST_RATE_APR / 12;
+            
+            // Standard Fixed Mortgage Payment Amortization Formula
+            const principalAndInterest = (principalLoanValue * monthlyPeriodicInt * Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS)) / 
+                                         (Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS) - 1);
+            
+            const monthlyTaxAllocation = (price * ESTIMATED_SOCAL_TAX) / 12;
+            const netMonthlyOutflow = principalAndInterest + monthlyTaxAllocation + ESTIMATED_HAZARD_INS + hoaFee;
+
+            return {
+                pni: Math.round(principalAndInterest),
+                taxes: Math.round(monthlyTaxAllocation),
+                total: Math.round(netMonthlyOutflow)
+            };
+        };
+
+        /**
+         * Array Filtering, Sorting, and Structural Node Injection Renderer
+         */
+        function renderInterface() {
+            const currentPriceMax = parseInt(document.getElementById('price-slider').value);
+            const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
+            const selectedSortOrder = document.getElementById('sort-picker').value;
+
+            // Step 1: Perform client-side filter array mapping
+            let filteredArray = livePropertyFeed.filter(property => {
+                if (property.price > currentPriceMax) return false;
+                if (property.commute > currentCommuteMax) return false;
+                if (property.beds < activeMinBeds) return false;
+                return true;
+            });
+
+            // Map localized calculated pricing schemas directly into properties for efficient sorting executions
+            filteredArray = filteredArray.map(node => {
+                const calculations = defCalculation(node.price, node.hoa);
+                return { ...node, calculations };
+            });
+
+            // Step 2: Perform selected sorting criteria adjustments
+            if (selectedSortOrder === 'p-asc') filteredArray.sort((a, b) => a.price - b.price);
+            if (selectedSortOrder === 'p-desc') filteredArray.sort((a, b) => b.price - a.price);
+            if (selectedSortOrder === 'c-asc') filteredArray.sort((a, b) => a.commute - b.commute);
+            if (selectedSortOrder === 'm-asc') filteredArray.sort((a, b) => a.calculations.total - b.calculations.total);
+
+            // Step 3: Handle zero-state structural checks and render out cards
+            document.getElementById('results-count').innerText = filteredArray.length;
+            const targetGridWrapper = document.getElementById('card-grid');
+            const zeroStateContainer = document.getElementById('empty-state');
+            
+            targetGridWrapper.innerHTML = "";
+
+            if (filteredArray.length === 0) {
+                zeroStateContainer.classList.remove('hidden');
+                return;
+            } else {
+                zeroStateContainer.classList.add('hidden');
+            }
+
+            filteredArray.forEach(listing => {
+                const itemContainerNode = document.createElement('div');
+                itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150";
+                itemContainerNode.innerHTML = `
+                    <div class="relative h-44 bg-slate-100">
+                        <img src="${listing.img}" class="w-full h-full object-cover" alt="Property Image Listing View">
+                        <span class="absolute top-3 left-3 bg-slate-900/90 text-white text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md">
+                            ${listing.type}
+                        </span>
+                        <span class="absolute bottom-3 right-3 bg-slate-900/90 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-car text-blue-500 text-[10px]"></i> ${listing.commute} min drive to Anaheim
+                        </span>
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h3 class="font-bold text-base text-slate-900 truncate pr-2 tracking-tight">${listing.address}</h3>
+                                <p class="text-base font-black text-slate-900">$${listing.price.toLocaleString()}</p>
+                            </div>
+                            <p class="text-xs font-medium text-slate-400 mb-4">${listing.city}</p>
+                            
+                            <div class="flex gap-4 border-y border-slate-100 py-2.5 mb-4 text-xs font-bold text-slate-600">
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-bed text-slate-400"></i> ${listing.beds}bd</span>
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-bath text-slate-400"></i> ${listing.baths}ba</span>
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-slate-400"></i> $${listing.hoa}/mo HOA</span>
+                            </div>
+
+                            <!-- Underwriting Cost Output Sub-Matrix -->
+                            <div class="bg-slate-50/80 rounded-xl p-3.5 text-xs mb-4 space-y-1.5 border border-slate-100">
+                                <div class="flex justify-between text-slate-500">
+                                    <span>P&I Financed Payment:</span>
+                                    <span class="font-semibold text-slate-800">$${listing.calculations.pni.toLocaleString()}/mo</span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Taxes & Hazard Ins (Est):</span>
+                                    <span class="font-semibold text-slate-800">$${(listing.calculations.taxes + ESTIMATED_HAZARD_INS).toLocaleString()}/mo</span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>HOA Association Dues:</span>
+                                    <span class="font-semibold text-slate-800">$${listing.hoa.toLocaleString()}/mo</span>
+                                </div>
+                                <div class="flex justify-between border-t border-dashed border-slate-200 pt-2 mt-2 text-sm">
+                                    <span class="font-bold text-slate-900">Total Monthly Cost:</span>
+                                    <span class="font-black text-emerald-600">$${listing.calculations.total.toLocaleString()}/mo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${listing.link}" target="_blank" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-center py-2.5 rounded-xl text-xs font-bold tracking-wide transition flex items-center justify-center gap-1.5">
+                            MLS Property Sheet <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-60"></i>
+                        </a>
+                    </div>
+                `;
+                targetGridWrapper.appendChild(itemContainerNode);
+            });
+        }
+
+        // Operational Pipeline Event Listeners
+        document.getElementById('price-slider').addEventListener('input', (e) => {
+            document.getElementById('price-lbl').innerText = `$${parseInt(e.target.value).toLocaleString()}`;
+            renderInterface();
+        });
+
+        document.getElementById('commute-slider').addEventListener('input', (e) => {
+            document.getElementById('commute-lbl').innerText = `${e.target.value} mins`;
+            renderInterface();
+        });
+
+        document.getElementById('sort-picker').addEventListener('change', renderInterface);
+
+        document.querySelectorAll('.bed-btn').forEach(buttonElement => {
+            buttonElement.addEventListener('click', (e) => {
+                document.querySelectorAll('.bed-btn').forEach(btn => {
+                    btn.className = "bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition";
+                });
+                e.target.className = "bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-700 transition";
+                activeMinBeds = parseInt(e.target.dataset.beds);
+                renderInterface();
+            });
+        });
+
+        document.getElementById('reset-filters').addEventListener('click', () => {
+            document.getElementById('price-slider').value = 550000;
+            document.getElementById('price-lbl').innerText = "$550,000";
+            document.getElementById('commute-slider').value = 60;
+            document.getElementById('commute-lbl').innerText = "60 mins";
+            document.getElementById('sort-picker').value = 'p-asc';
+            document.querySelector('[data-beds="2"]').click();
+            renderInterface();
+        });
+
+        // Initialize App Feed Request Pipeline on Window Load execution loop
+        window.onload = fetchExternalDataset;
+    </script>
+</body>
+</html>

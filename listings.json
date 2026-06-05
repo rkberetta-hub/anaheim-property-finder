@@ -1,0 +1,81 @@
+JSON
+[
+    {
+        "id": 1,
+        "address": "1124 S Citron St",
+        "city": "Anaheim, CA 92805",
+        "price": 399000,
+        "hoa": 410,
+        "commute": 8,
+        "beds": 2,
+        "baths": 2,
+        "type": "Condo",
+        "img": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/1124-S-Citron-St,-Anaheim,-CA-92805_rb/"
+    },
+    {
+        "id": 2,
+        "address": "1250 S Brookhurst St #2006",
+        "city": "Anaheim, CA 92804",
+        "price": 460000,
+        "hoa": 395,
+        "commute": 10,
+        "beds": 3,
+        "baths": 2,
+        "type": "Condo",
+        "img": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/1250-S-Brookhurst-St-Unit-2006,-Anaheim,-CA-92804_rb/"
+    },
+    {
+        "id": 3,
+        "address": "1015 Margarita Dr Unit D202",
+        "city": "Corona, CA 92879",
+        "price": 339000,
+        "hoa": 340,
+        "commute": 35,
+        "beds": 2,
+        "baths": 2,
+        "type": "Condo",
+        "img": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/1015-Margarita-Dr-Unit-D202,-Corona,-CA-92879_rb/"
+    },
+    {
+        "id": 4,
+        "address": "2951 Via Milano Unit 202",
+        "city": "Corona, CA 92879",
+        "price": 424888,
+        "hoa": 320,
+        "commute": 35,
+        "beds": 2,
+        "baths": 2,
+        "type": "Condo",
+        "img": "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/2951-Via-Milano-Unit-202,-Corona,-CA-92879_rb/"
+    },
+    {
+        "id": 5,
+        "address": "1103 Border Ave",
+        "city": "Corona, CA 92882",
+        "price": 474900,
+        "hoa": 290,
+        "commute": 40,
+        "beds": 3,
+        "baths": 2,
+        "type": "Condo",
+        "img": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/1103-Border-Ave,-Corona,-CA-92882_rb/"
+    },
+    {
+        "id": 6,
+        "address": "8155 Woodland Dr #58",
+        "city": "Buena Park, CA 90620",
+        "price": 525000,
+        "hoa": 395,
+        "commute": 12,
+        "beds": 2,
+        "baths": 2,
+        "type": "Townhouse",
+        "img": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=80",
+        "link": "https://www.zillow.com/homes/8155-Woodland-Dr-58,-Buena-Park,-CA-90620_rb/"
+    }
+]
