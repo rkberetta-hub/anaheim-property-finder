@@ -1,0 +1,52 @@
+name: Daily Real Estate Data Update
+
+on:
+  schedule:
+    # Executes automatically at 13:00 UTC (6:00 AM Mountain Time) every single day
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    # This leaves a manual "Run Workflow" trigger button in the GitHub UI for on-demand testing
+
+permissions:
+  contents: write # Grants the automated runner permission to write the JSON file back to your repo
+
+jobs:
+  refresh-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out your repository files into the environment
+    - name: Access Repository Source Code
+      uses: actions/checkout@v4
+
+    # Step 2: Establish a stable Python environment on the virtual machine
+    - name: Initialize Python 3.11 Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    # Step 3: Install necessary networking libraries
+    - name: Install Runtime Script Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+
+    # Step 4: Fire your processing script to download and structure the data
+    - name: Execute Local Web Query Scraper
+      run: python scraper.py
+
+    # Step 5: Detect modifications and safely commit listings.json back to the web server
+    - name: Automatically Commit and Push Fresh Snapshot Data
+      run: |
+        git config --global user.name "GitHub Actions Automation"
+        git config --global user.email "actions@github.com"
+        
+        # Check if the python script actually changed any data to avoid empty empty spam commits
+        if ! git diff --quiet listings.json; then
+          git add listings.json
+          git commit -m "Automated System Update: Fresh Real Estate JSON Snapshot [Skip CI]"
+          git push
+          echo "Pipeline complete: Listings file updated successfully."
+        else
+          echo "Pipeline complete: Market conditions unchanged. No update required."
+        fi
