@@ -63,7 +63,7 @@ def run_web_query():
     # Process and apply structural constraints
     output_listings = []
     for house in current_market_results:
-        if house["price"] <= 550000 and house["beds"] >= 2 and house["commute"] <= 60:
+        if house["price"] <= 600000 and house["beds"] >= 2 and house["commute"] <= 60:
             output_listings.append(house)
             
     # Overwrite the listings file on disk
