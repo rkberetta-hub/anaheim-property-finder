@@ -46,9 +46,9 @@
                 <div>
                     <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
                         <span>Max Purchase Price</span> 
-                        <span id="price-lbl" class="text-blue-600 font-black text-sm">$550,000</span>
+                        <span id="price-lbl" class="text-blue-600 font-black text-sm">$600,000</span>
                     </label>
-                    <input type="range" id="price-slider" min="300000" max="550000" step="5000" value="550000" 
+                    <input type="range" id="price-slider" min="300000" max="550000" step="5000" value="600000" 
                            class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
                 </div>
 
@@ -285,8 +285,8 @@
         });
 
         document.getElementById('reset-filters').addEventListener('click', () => {
-            document.getElementById('price-slider').value = 550000;
-            document.getElementById('price-lbl').innerText = "$550,000";
+            document.getElementById('price-slider').value = 600000;
+            document.getElementById('price-lbl').innerText = "$600,000";
             document.getElementById('commute-slider').value = 60;
             document.getElementById('commute-lbl').innerText = "60 mins";
             document.getElementById('sort-picker').value = 'p-asc';
