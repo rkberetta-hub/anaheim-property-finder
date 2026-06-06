@@ -48,7 +48,7 @@
                         <span>Max Purchase Price</span> 
                         <span id="price-lbl" class="text-blue-600 font-black text-sm">$600,000</span>
                     </label>
-                    <input type="range" id="price-slider" min="300000" max="550000" step="5000" value="600000" 
+                    <input type="range" id="price-slider" min="300000" max="600000" step="5000" value="600000" 
                            class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
                 </div>
 
@@ -94,7 +94,7 @@
 
             <!-- Card Render Container -->
             <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Javascript maps file elements asynchronously right here -->
+                <!-- Data injection point -->
             </div>
 
             <!-- Zero State Error Fallback Display Component -->
@@ -108,21 +108,15 @@
 
     <!-- Runtime Client Script Pipeline Logic -->
     <script>
-        // Global runtime operational tracking references
         let livePropertyFeed = [];
         let activeMinBeds = 2;
 
-        // Underwriting Formula Constants
         const INTEREST_RATE_APR = 0.0648; 
         const DOWN_PAYMENT_FACTOR = 0.15;
-        const AMORTIZATION_MONTHS = 360;  // 30-Year Conventional Fixed Structure
-        const ESTIMATED_SOCAL_TAX = 0.012; // 1.2% Target Annual Assessment Escrow
-        const ESTIMATED_HAZARD_INS = 100;  // Static condo structural hazard premium/mo
+        const AMORTIZATION_MONTHS = 360;  
+        const ESTIMATED_SOCAL_TAX = 0.012; 
+        const ESTIMATED_HAZARD_INS = 100;  
 
-        /**
-         * Asynchronous Document Initialization 
-         * Pulls data from external file storage architecture on load
-         */
         async function fetchExternalDataset() {
             try {
                 const response = await fetch('listings.json');
@@ -141,14 +135,10 @@
             }
         }
 
-        /**
-         * Dynamic Mortgage Amortization Calculator Engine
-         */
         defCalculation = (price, hoaFee) => {
             const principalLoanValue = price * (1 - DOWN_PAYMENT_FACTOR);
             const monthlyPeriodicInt = INTEREST_RATE_APR / 12;
             
-            // Standard Fixed Mortgage Payment Amortization Formula
             const principalAndInterest = (principalLoanValue * monthlyPeriodicInt * Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS)) / 
                                          (Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS) - 1);
             
@@ -162,15 +152,11 @@
             };
         };
 
-        /**
-         * Array Filtering, Sorting, and Structural Node Injection Renderer
-         */
         function renderInterface() {
             const currentPriceMax = parseInt(document.getElementById('price-slider').value);
             const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
             const selectedSortOrder = document.getElementById('sort-picker').value;
 
-            // Step 1: Perform client-side filter array mapping
             let filteredArray = livePropertyFeed.filter(property => {
                 if (property.price > currentPriceMax) return false;
                 if (property.commute > currentCommuteMax) return false;
@@ -178,19 +164,16 @@
                 return true;
             });
 
-            // Map localized calculated pricing schemas directly into properties for efficient sorting executions
             filteredArray = filteredArray.map(node => {
                 const calculations = defCalculation(node.price, node.hoa);
                 return { ...node, calculations };
             });
 
-            // Step 2: Perform selected sorting criteria adjustments
             if (selectedSortOrder === 'p-asc') filteredArray.sort((a, b) => a.price - b.price);
             if (selectedSortOrder === 'p-desc') filteredArray.sort((a, b) => b.price - a.price);
             if (selectedSortOrder === 'c-asc') filteredArray.sort((a, b) => a.commute - b.commute);
             if (selectedSortOrder === 'm-asc') filteredArray.sort((a, b) => a.calculations.total - b.calculations.total);
 
-            // Step 3: Handle zero-state structural checks and render out cards
             document.getElementById('results-count').innerText = filteredArray.length;
             const targetGridWrapper = document.getElementById('card-grid');
             const zeroStateContainer = document.getElementById('empty-state');
@@ -207,9 +190,16 @@
             filteredArray.forEach(listing => {
                 const itemContainerNode = document.createElement('div');
                 itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150";
+                
+                // Select icon design depending on property type attributes
+                const propertyIconClass = listing.type === 'Townhouse' ? 'fa-solid fa-house-chimney' : 'fa-solid fa-building';
+
                 itemContainerNode.innerHTML = `
-                    <div class="relative h-44 bg-slate-100">
-                        <img src="${listing.img}" class="w-full h-full object-cover" alt="Property Image Listing View">
+                    <!-- Generic Icon Image Box Placeholder -->
+                    <div class="relative h-44 bg-slate-100/70 flex items-center justify-center border-b border-slate-100">
+                        <div class="text-slate-300 text-6xl">
+                            <i class="${propertyIconClass}"></i>
+                        </div>
                         <span class="absolute top-3 left-3 bg-slate-900/90 text-white text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md">
                             ${listing.type}
                         </span>
@@ -260,7 +250,6 @@
             });
         }
 
-        // Operational Pipeline Event Listeners
         document.getElementById('price-slider').addEventListener('input', (e) => {
             document.getElementById('price-lbl').innerText = `$${parseInt(e.target.value).toLocaleString()}`;
             renderInterface();
@@ -294,7 +283,6 @@
             renderInterface();
         });
 
-        // Initialize App Feed Request Pipeline on Window Load execution loop
         window.onload = fetchExternalDataset;
     </script>
 </body>
