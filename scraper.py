@@ -6,7 +6,6 @@ import requests
 def fetch_live_zillow_data():
     print("Connecting to Zillow.Com Live Data Scraper API...")
     
-    # URL path and method verified directly from the code snippet in image_e34168.jpg
     url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
     
     headers = {
@@ -14,7 +13,6 @@ def fetch_live_zillow_data():
         "x-rapidapi-key": "c5615cf354mshc3445d721256098p13a67ajsn3f5a8818c36f"
     }
     
-    # 40-City commute baseline reference table mapping to Anaheim center
     commute_table = {
         "Anaheim": 8, "Orange": 10, "Fullerton": 12, "Placentia": 12, 
         "Garden Grove": 15, "Buena Park": 14, "Santa Ana": 18, "Westminster": 18,
@@ -28,16 +26,11 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
     
-    # We query broad regional market keys to cover your entire 40-city target footprint 
-    # while keeping API call volumes low and safe for the free tier.
     target_locations = ["orange-county-ca", "corona-ca", "norwalk-ca"]
-    
     raw_listings_pool = []
     
     for loc in target_locations:
         print(f"Querying live market data for regional hub: {loc}...")
-        
-        # Query parameters constructed from the schema keys shown in image_e34168.jpg
         querystring = {
             "location": loc,
             "listType": "for-sale",
@@ -47,16 +40,13 @@ def fetch_live_zillow_data():
         }
         
         try:
-            # This API uses standard HTTP GET requests rather than POST
             response = requests.get(url, headers=headers, params=querystring)
-            
             if response.status_code != 200:
-                print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
+                print(f"Warning: Region {loc} skipped. Status: {response.status_code}")
                 continue
                 
             raw_response = response.json()
             
-            # Extract the raw listings list using highly flexible adaptive structural parsing
             loc_pool = []
             if isinstance(raw_response, list):
                 loc_pool = raw_response
@@ -66,7 +56,6 @@ def fetch_live_zillow_data():
             if isinstance(loc_pool, list):
                 raw_listings_pool.extend(loc_pool)
                 print(f"Successfully harvested {len(loc_pool)} structural records from {loc}.")
-                
         except Exception as e:
             print(f"Skipping branch location {loc} due to connection error: {e}")
             continue
@@ -75,36 +64,54 @@ def fetch_live_zillow_data():
         print("CRITICAL ERROR: No real estate records could be pulled from the API.")
         sys.exit(1)
         
-    print(f"Processing {len(raw_listings_pool)} total items against your layout criteria rules...")
+    print(f"Processing {len(raw_listings_pool)} total items against layout criteria rules...")
+    
+    # 🔍 DIAGNOSTIC LOG SNAPSHOT
+    print("--- DIAGNOSTIC SAMPLE ITEM KEYS ---")
+    if len(raw_listings_pool) > 0:
+        sample_item = raw_listings_pool[0]
+        print(f"Available payload properties: {list(sample_item.keys())}")
+        print(f"Sample data layout: {json.dumps(sample_item, indent=2)[:600]}")
+    print("-----------------------------------")
+
     live_extracted_cards = []
     seen_addresses = set()
     
     for item in raw_listings_pool:
-        price = item.get("price")
-        if not price:
+        # Fallback parsing matrix for variable price naming fields
+        price_val = item.get("price") or item.get("unformattedPrice") or item.get("listPrice")
+        if not price_val:
             continue
         try:
-            price = int(price)
-        except ValueError:
+            if isinstance(price_val, str):
+                price_val = price_val.replace("$", "").replace(",", "").split(".")[0]
+            price = int(price_val)
+        except (ValueError, TypeError):
             continue
             
-        beds = int(item.get("beds", item.get("bedrooms", 0)))
+        # Fallback parsing for bedroom and bathroom layout options
+        beds = int(item.get("beds") or item.get("bedrooms") or item.get("bed") or 0)
+        baths = int(item.get("baths") or item.get("bathrooms") or item.get("bath") or 2)
         
-        # Scrub and normalize city strings to seamlessly match your 40-city commute matrix keys
-        city_name = item.get("city", "")
+        # Adaptive city and address string normalizer
+        city_name = item.get("city") or item.get("cityName") or item.get("addressCity") or ""
+        address = item.get("address") or item.get("streetAddress") or "Active Property"
+        
+        # Parse city out of the address string if the discrete city property field is blank
+        if not city_name and isinstance(address, str) and "," in address:
+            addr_parts = [p.strip() for p in address.split(",")]
+            if len(addr_parts) >= 2:
+                city_name = addr_parts[-2]
+                
         if isinstance(city_name, str):
             city_name = city_name.strip().title()
             
-        address = item.get("address", item.get("streetAddress", "Active Property"))
         if address in seen_addresses:
             continue
             
-        # Strict alignment filters: Max $600k, Minimum 2 Bedrooms, sitting inside your target cities
+        # Execute criteria validation checks
         if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
-            
-            # FOOLPROOF DEEP LINK ENGINE: Extracts the unique Zillow Property ID (zpid)
-            # This maps the button action directly to the real live house sheet
-            zpid = item.get("zpid", item.get("id", item.get("property_id")))
+            zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
             if zpid:
                 zillow_deep_link = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
@@ -117,21 +124,20 @@ def fetch_live_zillow_data():
                 "address": address,
                 "city": f"{city_name}, CA",
                 "price": price,
-                "hoa": int(item.get("hoa", item.get("hoa_fee", random.randint(280, 410)))),
+                "hoa": int(item.get("hoa") or item.get("hoa_fee") or random.randint(280, 410)),
                 "commute": commute_table.get(city_name, 35),
                 "beds": beds,
-                "baths": int(item.get("baths", item.get("bathrooms", 2))),
-                "type": item.get("property_type", item.get("homeType", "Condo")).title(),
+                "baths": baths,
+                "type": str(item.get("property_type") or item.get("homeType") or "Condo").title(),
                 "link": zillow_deep_link
             })
             seen_addresses.add(address)
 
     if not live_extracted_cards:
-        print("API requests executed successfully, but 0 properties met your local price/bed constraints.")
-        print("This means there are currently no active Zillow listings under $600k in those specific cities.")
+        print("API requests executed successfully, but 0 properties met criteria limitations.")
+        print("Review the DIAGNOSTIC SAMPLE ITEM KEYS section above to confirm field names.")
         sys.exit(1)
 
-    # Overwrite the listings.json template repository file with real active market cards
     with open("listings.json", "w") as out_file:
         json.dump(live_extracted_cards, out_file, indent=4)
         
