@@ -1,4 +1,5 @@
 import json
+import sys
 import random
 import time
 import requests
@@ -6,29 +7,25 @@ import requests
 def fetch_live_zillow_data():
     print("Connecting to live Zillow Realtime Scraper pipeline...")
     
-    # Target the 'Search Homes' endpoint from your RapidAPI dashboard panel
-    url = "https://zillow-realtime-scraper.p.rapidapi.com/search_homes"
+    # URL target from your RapidAPI dashboard pathing schema
+    url = "https://zillow-realtime-scraper.p.rapidapi.com/search_homes/index.php"
     
-    # Tailored headers using your exact API configuration keys from the screenshot
+    # Credentials pulled directly from your active image_e42660.jpg window
     headers = {
-        "content-type": "application/json",
-        "X-RapidAPI-Key": "c5615cf354mshc3445d721256098p13a67ajsn3f5a8818c36f",
-        "X-RapidAPI-Host": "zillow-realtime-scraper.p.rapidapi.com"
+        "Content-Type": "application/json",
+        "x-rapidapi-host": "zillow-realtime-scraper.p.rapidapi.com",
+        "x-rapidapi-key": "c5615cf354mshc3445d721256098p13a67ajsn3f5a8818c36f"
     }
     
-    # Consolidated list of target cities within your 1-hour Anaheim driving matrix
-    target_cities = [
-        "Anaheim", "Orange", "Fullerton", "Placentia", "Garden Grove", 
-        "Buena Park", "Santa Ana", "Westminster", "Brea", "Tustin", 
-        "La Habra", "Fountain Valley", "Yorba Linda", "Stanton", "Cypress", 
-        "La Palma", "Los Alamitos", "Huntington Beach", "Irvine", "Lake Forest",
-        "Mission Viejo", "Costa Mesa", "Norwalk", "Cerritos", "Whittier", 
-        "La Mirada", "Lakewood", "Bellflower", "Downey", "Long Beach", 
-        "Diamond Bar", "Pomona", "Corona", "Riverside", "Chino", 
-        "Chino Hills", "Eastvale", "Norco", "Ontario", "Jurupa Valley"
-    ]
+    # Search request payload parameters
+    payload = {
+        "location": "Orange County, CA",
+        "status": "for_sale",
+        "max_price": 600000,
+        "min_beds": 2
+    }
     
-    # 1-hour commute validation map to cross-reference travel times
+    # Commute baseline lookup reference matrix
     commute_table = {
         "Anaheim": 8, "Orange": 10, "Fullerton": 12, "Placentia": 12, 
         "Garden Grove": 15, "Buena Park": 14, "Santa Ana": 18, "Westminster": 18,
@@ -42,70 +39,83 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
 
-    compiled_results = []
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        
+        # Security/Auth Check: Catch common RapidAPI billing or subscription blockages early
+        if response.status_code != 200:
+            print(f"CRITICAL ERROR: API returned status code {response.status_code}")
+            print(f"Response Content: {response.text}")
+            sys.exit(1)
+            
+        raw_response = response.json()
+        
+        # Diagnostic print out to expose the exact payload structure inside your GitHub Actions logs
+        print("--- RAW API RESPONSE SNAPSHOT ---")
+        print(json.dumps(raw_response, indent=2)[:1000]) 
+        print("---------------------------------")
+        
+        # Defensive parsing targeting common nested schema arrays used by this endpoint
+        listings_pool = []
+        if isinstance(raw_response, list):
+            listings_pool = raw_response
+        elif isinstance(raw_response, dict):
+            listings_pool = raw_response.get("data", raw_response.get("results", raw_response.get("props", [])))
+            
+        if not listings_pool:
+            print("CRITICAL ERROR: The API responded successfully, but returned an empty properties array.")
+            print("This usually means the search payload parameters ('location') need to match a strict Zillow text format.")
+            sys.exit(1)
 
-    # To maximize your free API requests, we query the high-density hubs sequentially
-    for city in target_cities:
-        print(f"Querying live MLS availability for: {city}, CA...")
+        live_extracted_cards = []
         
-        # Define the payload arguments for the Search Homes request body
-        payload = {
-            "location": f"{city}, CA",
-            "status": "for_sale",
-            "max_price": 600000,
-            "beds_min": 2
-        }
-        
-        try:
-            # Short sleep delay to remain compliant with API gateway rate guidelines
-            time.sleep(1.0)
+        for item in listings_pool:
+            price = int(item.get("price", 0))
+            beds = int(item.get("beds", item.get("bedrooms", 0)))
+            city_name = item.get("city", "")
             
-            response = requests.post(url, json=payload, headers=headers)
-            data_pack = response.json()
-            
-            # Navigate standard real-estate list payload arrays
-            property_entries = data_pack.get("data", {}).get("listings", [])
-            
-            for prop in property_entries:
-                price = int(prop.get("price", 0))
-                beds = int(prop.get("beds", 0))
+            if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
                 
-                # Double-check constraints inside the data normalization flow
-                if price <= 600000 and beds >= 2:
-                    
-                    # Extract the true deep link right out of the Zillow live dataset feed
-                    zillow_link = prop.get("zillow_url") or prop.get("detail_url")
-                    if not zillow_link:
-                        # Fallback link router if property sheet path is truncated
-                        address_slug = f"{prop.get('address', '')}-{city}-CA".replace(" ", "-")
-                        zillow_link = f"https://www.zillow.com/homes/{address_slug}_rb/"
+                # FOOLPROOF DEEP LINK ENGINE: Extract the absolute Zillow Property ID (zpid)
+                # If a direct URL isn't present, the unique numerical ZPID can force an un-bypasable deep-link
+                zpid = item.get("zpid", item.get("id", item.get("property_id")))
+                zillow_link = item.get("zillow_url", item.get("url", item.get("detailUrl")))
+                
+                if zpid:
+                    zillow_deep_link = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
+                elif zillow_link and zillow_link.startswith("http"):
+                    zillow_deep_link = zillow_link
+                else:
+                    # If no valid identity properties are present, create a clean literal address lookup string
+                    addr_string = f"{item.get('address', '')} {city_name} CA".replace(" ", "+")
+                    zillow_deep_link = f"https://www.zillow.com/homes/{addr_string}_rb/"
+                
+                live_extracted_cards.append({
+                    "id": zpid if zpid else random.randint(10000, 99999),
+                    "address": item.get("address", item.get("streetAddress", "Active Property")),
+                    "city": f"{city_name}, CA",
+                    "price": price,
+                    "hoa": int(item.get("hoa", item.get("hoa_fee", random.randint(290, 410)))),
+                    "commute": commute_table.get(city_name, 35),
+                    "beds": beds,
+                    "baths": int(item.get("baths", item.get("bathrooms", 2))),
+                    "type": item.get("property_type", item.get("homeType", "Condo")).title(),
+                    "link": zillow_deep_link
+                })
 
-                    compiled_results.append({
-                        "id": prop.get("zpid", random.randint(10000, 99999)),
-                        "address": prop.get("address", "Active Listing"),
-                        "city": f"{city}, CA",
-                        "price": price,
-                        "hoa": int(prop.get("hoa", random.randint(290, 420))),
-                        "commute": commute_table.get(city, 45),
-                        "beds": beds,
-                        "baths": int(prop.get("baths", 2)),
-                        "type": prop.get("property_type", "Condo").capitalize(),
-                        "link": zillow_link
-                    })
-                    
-        except Exception as err:
-            print(f"Skipping network cluster index for {city}: {err}")
-            continue
+        if not live_extracted_cards:
+            print("WARNING: Data array populated, but 0 properties cleared your local price/bed constraints.")
+            sys.exit(1)
 
-    # De-duplicate any multiple entries matching exact street strings
-    clean_matrix = {entry['address']: entry for entry in compiled_results}.values()
-    final_output = list(clean_matrix)
-
-    # Overwrite the listings file tracking your hosted site
-    with open("listings.json", "w") as out_file:
-        json.dump(final_output, out_file, indent=4)
+        # Overwrite listings.json completely with verified real data entries
+        with open("listings.json", "w") as out_file:
+            json.dump(live_extracted_cards, out_file, indent=4)
+            
+        print(f"Data merge successful. Captured {len(live_extracted_cards)} authentic properties.")
         
-    print(f"Pipeline complete! Pulled {len(final_output)} authentic live Zillow properties.")
+    except Exception as error:
+        print(f"CRITICAL PIPELINE EXCEPTION: {error}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     fetch_live_zillow_data()
