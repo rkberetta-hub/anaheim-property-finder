@@ -37,6 +37,18 @@
             </div>
 
             <div class="space-y-5">
+                <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm text-white">
+                    <span class="text-xs font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-heart text-rose-500 animate-pulse"></i> 
+                        <span>Show Favorites Only</span>
+                        <span id="fav-counter" class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded-md font-black">0</span>
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="fav-toggle" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                    </label>
+                </div>
+
                 <div>
                     <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
                         <span>Max Purchase Price</span> 
@@ -125,8 +137,7 @@
                 </p>
             </div>
 
-            <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                </div>
+            <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
 
             <div id="empty-state" class="hidden text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
                 <div class="text-slate-200 text-6xl mb-4"><i class="fa-solid fa-building-circle-exclamation"></i></div>
@@ -139,6 +150,9 @@
     <script>
         let livePropertyFeed = [];
         let activeMinBeds = 2;
+        
+        // NEW: Pull existing liked property IDs array out of browser cache storage
+        let likedListings = JSON.parse(localStorage.getItem('likedAnaheimListings')) || [];
 
         const INTEREST_RATE_APR = 0.0648; 
         const DOWN_PAYMENT_FACTOR = 0.15;
@@ -181,21 +195,43 @@
             };
         };
 
+        // NEW: Execution logic to cleanly toggle IDs inside your favorites storage array
+        window.toggleLikeListing = (id) => {
+            const stringId = String(id);
+            const index = likedListings.indexOf(stringId);
+            
+            if (index > -1) {
+                likedListings.splice(index, 1); // Unlike item
+            } else {
+                likedListings.push(stringId); // Like item
+            }
+            
+            localStorage.setItem('likedAnaheimListings', JSON.stringify(likedListings));
+            renderInterface();
+        };
+
         function renderInterface() {
             const currentPriceMax = parseInt(document.getElementById('price-slider').value);
             const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
             const selectedSortOrder = document.getElementById('sort-picker').value;
+            const showFavoritesOnly = document.getElementById('fav-toggle').checked; // 👈 SELECTION DETECTOR
 
-            // Gather values of all currently checked boxes
             const checkedBoxes = Array.from(document.querySelectorAll('.type-chk:checked'));
             const activeTypes = checkedBoxes.map(chk => chk.value);
 
+            // NEW: Synchronize live counter badge value inside sidebar controls
+            document.getElementById('fav-counter').innerText = likedListings.length;
+
             let filteredArray = livePropertyFeed.filter(property => {
+                const propIdString = String(property.id);
+                
+                # NEW: Drop out un-liked listings instantly if the Favorites filter toggle is set to Active
+                if (showFavoritesOnly && !likedListings.includes(propIdString)) return false;
+
                 if (property.price > currentPriceMax) return false;
                 if (property.commute > currentCommuteMax) return false;
                 if (property.beds < activeMinBeds) return false;
                 
-                // Dynamic Multi-Select Logic Evaluation Pass
                 const normalizedType = (property.type || "").toLowerCase();
                 const matchesAnyCheckedType = activeTypes.some(typeKey => normalizedType.includes(typeKey));
                 
@@ -228,9 +264,8 @@
 
             filteredArray.forEach(listing => {
                 const itemContainerNode = document.createElement('div');
-                itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150";
+                itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150 relative";
                 
-                // Select icon design depending on property type attributes
                 let propertyIconClass = 'fa-solid fa-building';
                 if ((listing.type || "").toLowerCase().includes("townhouse")) {
                     propertyIconClass = 'fa-solid fa-house-chimney';
@@ -240,8 +275,16 @@
                     propertyIconClass = 'fa-solid fa-caravan';
                 }
 
+                // NEW: Dynamic evaluation to style active hearts vs inactive hearts on the layout template
+                const isItemLiked = likedListings.includes(String(listing.id));
+                const heartButtonIconClass = isItemLiked ? 'fa-solid fa-heart text-rose-500 scale-110' : 'fa-regular fa-heart text-slate-400 hover:text-rose-500';
+
                 itemContainerNode.innerHTML = `
                     <div class="relative h-44 bg-slate-100/70 flex items-center justify-center border-b border-slate-100">
+                        <button onclick="window.toggleLikeListing('${listing.id}')" class="absolute top-3 right-3 bg-white/90 hover:bg-white text-slate-500 w-7 h-7 rounded-xl transition duration-150 shadow-sm flex items-center justify-center z-10 backdrop-blur-sm border border-slate-200/40" title="${isItemLiked ? 'Remove from Favorites' : 'Add to Favorites'}">
+                            <i class="${heartButtonIconClass} text-xs transition duration-100"></i>
+                        </button>
+                        
                         <div class="text-slate-300 text-6xl">
                             <i class="${propertyIconClass}"></i>
                         </div>
@@ -255,7 +298,7 @@
                     <div class="p-5 flex-1 flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-baseline mb-1">
-                                <h3 class="font-bold text-base text-slate-900 truncate pr-2 tracking-tight">${listing.address}</h3>
+                                <h3 class="font-bold text-base text-slate-900 truncate pr-8 tracking-tight">${listing.address}</h3>
                                 <p class="text-base font-black text-slate-900">$${listing.price.toLocaleString()}</p>
                             </div>
                             <p class="text-xs font-medium text-slate-400 mb-4">${listing.city}</p>
@@ -309,6 +352,9 @@
         });
 
         document.getElementById('sort-picker').addEventListener('change', renderInterface);
+        
+        // NEW: Event listener to refresh display output arrays when toggle states shift
+        document.getElementById('fav-toggle').addEventListener('change', renderInterface);
 
         document.querySelectorAll('.bed-btn').forEach(buttonElement => {
             buttonElement.addEventListener('click', (e) => {
@@ -326,6 +372,9 @@
             document.getElementById('price-lbl').innerText = "$750,000";
             document.getElementById('commute-slider').value = 60;
             document.getElementById('commute-lbl').innerText = "60 mins";
+            
+            // NEW: Turn off favorites isolation filter on master system reset
+            document.getElementById('fav-toggle').checked = false;
             
             document.querySelectorAll('.type-chk').forEach(chk => {
                 chk.checked = (chk.value !== 'manufactured');
