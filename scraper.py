@@ -5,7 +5,7 @@ import time
 import requests
 
 def fetch_live_zillow_data():
-    print("Connecting to Zillow.Com Live Data Scraper API with Backoff Handler...")
+    print("Connecting to Zillow.Com Live Data Scraper API (Paid Tier Mode)...")
     
     url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
     
@@ -28,20 +28,16 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
     
-    # CURATED SELECTION: 12 high-safety targets
+    # PRO-TIER EXPANSION: 40 comprehensive regional commuter destinations
     target_locations = [
-        "irvine-ca",
-        "yorba-linda-ca",
-        "chino-hills-ca",
-        "brea-ca",
-        "tustin-ca",
-        "fountain-valley-ca",
-        "cypress-ca",
-        "placentia-ca",
-        "huntington-beach-ca",
-        "fullerton-ca",
-        "orange-ca",
-        "corona-ca"
+        "anaheim-ca", "orange-ca", "fullerton-ca", "placentia-ca", "garden-grove-ca",
+        "buena-park-ca", "santa-ana-ca", "westminster-ca", "brea-ca", "tustin-ca",
+        "la-habra-ca", "fountain-valley-ca", "yorba-linda-ca", "stanton-ca", "cypress-ca",
+        "la-palma-ca", "los-alamitos-ca", "huntington-beach-ca", "irvine-ca", "lake-forest-ca",
+        "mission-viejo-ca", "costa-mesa-ca", "norwalk-ca", "cerritos-ca", "whittier-ca",
+        "la-mirada-ca", "lakewood-ca", "bellflower-ca", "downey-ca", "long-beach-ca",
+        "diamond-bar-ca", "pomona-ca", "corona-ca", "riverside-ca", "chino-ca",
+        "chino-hills-ca", "eastvale-ca", "norco-ca", "ontario-ca", "jurupa-valley-ca"
     ]
     
     raw_listings_pool = []
@@ -50,19 +46,17 @@ def fetch_live_zillow_data():
         querystring = {
             "location": loc,
             "listType": "for-sale",
-            "maxPrice": "750000",
+            "maxPrice": "750000", # Updated parameters to $750k search limits
             "beds": "2",
             "page": "1"
         }
         
-        # Exponential Backoff and Retry Block
         max_retries = 3
-        base_delay = 3.5  # Increased base cooldown to clear the per-second rate limit safely
+        base_delay = 1.5  # Paid plans generally have softer rate limits, allowing faster sequential processing
         success = False
         
         for attempt in range(max_retries):
-            # Escalate sleep timing dynamically on consecutive failures
-            current_sleep = base_delay + (attempt * 3.0)
+            current_sleep = base_delay + (attempt * 2.0)
             time.sleep(current_sleep)
             
             print(f"Querying live market data for regional hub: {loc} (Attempt {attempt + 1}/{max_retries})...")
@@ -70,19 +64,17 @@ def fetch_live_zillow_data():
             try:
                 response = requests.get(url, headers=headers, params=querystring)
                 
-                # Intercept rate limit errors directly
                 if response.status_code == 429:
-                    print(f"⚠️ Hit rate limit threshold (429) for {loc}. Backing off and retrying shortly...")
-                    time.sleep(5.0)  # Extra buffer pause for the minute bucket to reset
+                    print(f"⚠️ Rate limit warning (429) for {loc}. Pacing request workflow execution...")
+                    time.sleep(4.0)
                     continue
                     
                 if response.status_code != 200:
                     print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
-                    break  # Stop retrying if it's a structural error like a 400 or 500
+                    break
                     
                 raw_response = response.json()
                 
-                # Adaptive object parsing layer
                 loc_pool = []
                 if isinstance(raw_response, list):
                     loc_pool = raw_response
@@ -93,7 +85,7 @@ def fetch_live_zillow_data():
                     raw_listings_pool.extend(loc_pool)
                     print(f"✅ Successfully harvested {len(loc_pool)} structural records from {loc}.")
                     success = True
-                    break  # Break out of retry loop on a successful data fetch
+                    break
                     
             except Exception as e:
                 print(f"Network error on {loc} during connection pass: {e}")
@@ -101,19 +93,13 @@ def fetch_live_zillow_data():
                 continue
         
         if not success:
-            print(f"Skipping {loc} completely after failing {max_retries} connection attempts.")
+            print(f"Skipping {loc} completely after failing retry attempts.")
 
     if not raw_listings_pool:
         print("CRITICAL ERROR: No real estate records could be recovered from any API pipeline loops.")
         sys.exit(1)
         
     print(f"Processing {len(raw_listings_pool)} total items against layout criteria rules...")
-    
-    print("--- DIAGNOSTIC SAMPLE ITEM KEYS ---")
-    if len(raw_listings_pool) > 0:
-        sample_item = raw_listings_pool[0]
-        print(f"Available payload properties: {list(sample_item.keys())}")
-    print("-----------------------------------")
 
     live_extracted_cards = []
     seen_addresses = set()
@@ -146,7 +132,8 @@ def fetch_live_zillow_data():
         if address in seen_addresses:
             continue
             
-        if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
+        # Hard limits updated internally to allow properties filtering under $750k
+        if 0 < price <= 750000 and beds >= 2 and city_name in commute_table:
             zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
             if zpid:
