@@ -5,9 +5,8 @@ import time
 import requests
 
 def fetch_live_zillow_data():
-    print("Connecting to Zillow.Com Live Data Scraper API...")
+    print("Connecting to Zillow.Com Live Data Scraper API with Backoff Handler...")
     
-    # Authenticated endpoint verified from your RapidAPI console dashboard
     url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
     
     headers = {
@@ -29,7 +28,7 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
     
-    # SAFETY-FIRST REGIONAL HUBS: 12 premium targets balancing low-crime and sub-$600k active inventory
+    # CURATED SELECTION: 12 high-safety targets
     target_locations = [
         "irvine-ca",
         "yorba-linda-ca",
@@ -48,11 +47,6 @@ def fetch_live_zillow_data():
     raw_listings_pool = []
     
     for loc in target_locations:
-        print(f"Querying live market data for secure regional hub: {loc}...")
-        
-        # Defensive anti-throttling delay to clear gateway firewalls smoothly
-        time.sleep(1.2) 
-        
         querystring = {
             "location": loc,
             "listType": "for-sale",
@@ -61,37 +55,60 @@ def fetch_live_zillow_data():
             "page": "1"
         }
         
-        try:
-            response = requests.get(url, headers=headers, params=querystring)
+        # Exponential Backoff and Retry Block
+        max_retries = 3
+        base_delay = 3.5  # Increased base cooldown to clear the per-second rate limit safely
+        success = False
+        
+        for attempt in range(max_retries):
+            # Escalate sleep timing dynamically on consecutive failures
+            current_sleep = base_delay + (attempt * 3.0)
+            time.sleep(current_sleep)
             
-            if response.status_code != 200:
-                print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
+            print(f"Querying live market data for regional hub: {loc} (Attempt {attempt + 1}/{max_retries})...")
+            
+            try:
+                response = requests.get(url, headers=headers, params=querystring)
+                
+                # Intercept rate limit errors directly
+                if response.status_code == 429:
+                    print(f"⚠️ Hit rate limit threshold (429) for {loc}. Backing off and retrying shortly...")
+                    time.sleep(5.0)  # Extra buffer pause for the minute bucket to reset
+                    continue
+                    
+                if response.status_code != 200:
+                    print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
+                    break  # Stop retrying if it's a structural error like a 400 or 500
+                    
+                raw_response = response.json()
+                
+                # Adaptive object parsing layer
+                loc_pool = []
+                if isinstance(raw_response, list):
+                    loc_pool = raw_response
+                elif isinstance(raw_response, dict):
+                    loc_pool = raw_response.get("results", raw_response.get("data", raw_response.get("props", raw_response.get("listings", []))))
+                
+                if isinstance(loc_pool, list):
+                    raw_listings_pool.extend(loc_pool)
+                    print(f"✅ Successfully harvested {len(loc_pool)} structural records from {loc}.")
+                    success = True
+                    break  # Break out of retry loop on a successful data fetch
+                    
+            except Exception as e:
+                print(f"Network error on {loc} during connection pass: {e}")
+                time.sleep(2.0)
                 continue
-                
-            raw_response = response.json()
-            
-            # Extract lists cleanly across diverse provider schema configurations
-            loc_pool = []
-            if isinstance(raw_response, list):
-                loc_pool = raw_response
-            elif isinstance(raw_response, dict):
-                loc_pool = raw_response.get("results", raw_response.get("data", raw_response.get("props", raw_response.get("listings", []))))
-            
-            if isinstance(loc_pool, list):
-                raw_listings_pool.extend(loc_pool)
-                print(f"Successfully harvested {len(loc_pool)} structural records from {loc}.")
-                
-        except Exception as e:
-            print(f"Skipping branch location {loc} due to connection error: {e}")
-            continue
+        
+        if not success:
+            print(f"Skipping {loc} completely after failing {max_retries} connection attempts.")
 
     if not raw_listings_pool:
-        print("CRITICAL ERROR: No real estate records could be pulled from the API.")
+        print("CRITICAL ERROR: No real estate records could be recovered from any API pipeline loops.")
         sys.exit(1)
         
     print(f"Processing {len(raw_listings_pool)} total items against layout criteria rules...")
     
-    # Print out a clear raw dictionary block to GitHub log to ease ongoing field diagnostics
     print("--- DIAGNOSTIC SAMPLE ITEM KEYS ---")
     if len(raw_listings_pool) > 0:
         sample_item = raw_listings_pool[0]
@@ -102,7 +119,6 @@ def fetch_live_zillow_data():
     seen_addresses = set()
     
     for item in raw_listings_pool:
-        # Fallback dictionary matching for price metrics
         price_val = item.get("price") or item.get("unformattedPrice") or item.get("listPrice")
         if not price_val:
             continue
@@ -113,15 +129,12 @@ def fetch_live_zillow_data():
         except (ValueError, TypeError):
             continue
             
-        # Parse physical building traits safely
         beds = int(item.get("beds") or item.get("bedrooms") or item.get("bed") or 0)
         baths = int(item.get("baths") or item.get("bathrooms") or item.get("bath") or 2)
         
-        # Normalize text casing to prevent look-up misses
         city_name = item.get("city") or item.get("cityName") or item.get("addressCity") or ""
         address = item.get("address") or item.get("streetAddress") or "Active Property"
         
-        # Regularize strings if structural parameters hold comma characters
         if not city_name and isinstance(address, str) and "," in address:
             addr_parts = [p.strip() for p in address.split(",")]
             if len(addr_parts) >= 2:
@@ -130,15 +143,12 @@ def fetch_live_zillow_data():
         if isinstance(city_name, str):
             city_name = city_name.strip().title()
             
-        # Drop duplicates on the fly
         if address in seen_addresses:
             continue
             
-        # Strict validation engine matching requirements
         if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
             zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
-            # FOOLPROOF LINK EXTRACTION: Build absolute ZPID paths to prevent generic landing page redirections
             if zpid:
                 zillow_deep_link = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
             else:
@@ -160,10 +170,9 @@ def fetch_live_zillow_data():
             seen_addresses.add(address)
 
     if not live_extracted_cards:
-        print("API requests executed successfully, but 0 properties cleared your local safety constraints.")
+        print("API requests executed successfully, but 0 properties met criteria limitations.")
         sys.exit(1)
 
-    # Overwrite listings.json completely with verified real data entries
     with open("listings.json", "w") as out_file:
         json.dump(live_extracted_cards, out_file, indent=4)
         
