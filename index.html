@@ -56,15 +56,6 @@
                 </div>
 
                 <div>
-                    <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
-                        <span>Minimum Year Built</span> 
-                        <span id="year-lbl" class="text-blue-600 font-black text-sm">1950+</span>
-                    </label>
-                    <input type="range" id="year-slider" min="1950" max="2026" step="5" value="1950" 
-                           class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
-                </div>
-
-                <div>
                     <label class="block text-xs font-bold text-slate-600 mb-2">Minimum Bedrooms</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" data-beds="2" class="bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-700 transition">2+ Beds</button>
@@ -193,7 +184,6 @@
         function renderInterface() {
             const currentPriceMax = parseInt(document.getElementById('price-slider').value);
             const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
-            const currentYearMin = parseInt(document.getElementById('year-slider').value);
             const selectedSortOrder = document.getElementById('sort-picker').value;
 
             // Gather values of all currently checked boxes
@@ -204,9 +194,6 @@
                 if (property.price > currentPriceMax) return false;
                 if (property.commute > currentCommuteMax) return false;
                 if (property.beds < activeMinBeds) return false;
-                
-                // Year Built Filtering Check
-                if (property.yearBuilt && property.yearBuilt < currentYearMin) return false;
                 
                 // Dynamic Multi-Select Logic Evaluation Pass
                 const normalizedType = (property.type || "").toLowerCase();
@@ -273,10 +260,9 @@
                             </div>
                             <p class="text-xs font-medium text-slate-400 mb-4">${listing.city}</p>
                             
-                            <div class="flex flex-wrap gap-x-4 gap-y-2 border-y border-slate-100 py-2.5 mb-4 text-xs font-bold text-slate-600">
+                            <div class="flex gap-4 border-y border-slate-100 py-2.5 mb-4 text-xs font-bold text-slate-600">
                                 <span class="flex items-center gap-1"><i class="fa-solid fa-bed text-slate-400"></i> ${listing.beds}bd</span>
                                 <span class="flex items-center gap-1"><i class="fa-solid fa-bath text-slate-400"></i> ${listing.baths}ba</span>
-                                <span class="flex items-center gap-1"><i class="fa-solid fa-calendar-days text-slate-400"></i> Est. Built: ${listing.yearBuilt || 'N/A'}</span>
                                 <span class="flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-slate-400"></i> $${listing.hoa}/mo HOA</span>
                             </div>
 
@@ -318,11 +304,6 @@
             renderInterface();
         });
 
-        document.getElementById('year-slider').addEventListener('input', (e) => {
-            document.getElementById('year-lbl').innerText = `${e.target.value}+`;
-            renderInterface();
-        });
-
         document.querySelectorAll('.type-chk').forEach(checkboxElement => {
             checkboxElement.addEventListener('change', renderInterface);
         });
@@ -345,9 +326,6 @@
             document.getElementById('price-lbl').innerText = "$750,000";
             document.getElementById('commute-slider').value = 60;
             document.getElementById('commute-lbl').innerText = "60 mins";
-            
-            document.getElementById('year-slider').value = 1950;
-            document.getElementById('year-lbl').innerText = "1950+";
             
             document.querySelectorAll('.type-chk').forEach(chk => {
                 chk.checked = (chk.value !== 'manufactured');
