@@ -5,7 +5,7 @@ import time
 import requests
 
 def fetch_live_zillow_data():
-    print("Connecting to Zillow.Com Live Data Scraper API (Pro Tier)...")
+    print("Connecting to Zillow.Com Live Data Scraper API (Paid Tier Mode)...")
     
     url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
     
@@ -28,7 +28,7 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
     
-    # Full expansion to all 40 regional commuter destinations
+    # PRO-TIER EXPANSION: 40 comprehensive regional commuter destinations
     target_locations = [
         "anaheim-ca", "orange-ca", "fullerton-ca", "placentia-ca", "garden-grove-ca",
         "buena-park-ca", "santa-ana-ca", "westminster-ca", "brea-ca", "tustin-ca",
@@ -52,7 +52,7 @@ def fetch_live_zillow_data():
         }
         
         max_retries = 3
-        base_delay = 1.5  
+        base_delay = 1.5
         success = False
         
         for attempt in range(max_retries):
@@ -65,7 +65,7 @@ def fetch_live_zillow_data():
                 response = requests.get(url, headers=headers, params=querystring)
                 
                 if response.status_code == 429:
-                    print(f"⚠️ Rate limit window hit (429) for {loc}. Pacing request stream workflow...")
+                    print(f"⚠️ Rate limit warning (429) for {loc}. Pacing request workflow execution...")
                     time.sleep(4.0)
                     continue
                     
@@ -88,7 +88,7 @@ def fetch_live_zillow_data():
                     break
                     
             except Exception as e:
-                print(f"Network exception on {loc} during connection loop pass: {e}")
+                print(f"Network error on {loc} during connection pass: {e}")
                 time.sleep(2.0)
                 continue
         
@@ -132,14 +132,6 @@ def fetch_live_zillow_data():
         if address in seen_addresses:
             continue
             
-        # Parse the construction age parameter dynamically
-        year_built_val = item.get("yearBuilt") or item.get("year_built") or item.get("built")
-        try:
-            year_built = int(year_built_val) if year_built_val else 1980
-        except (ValueError, TypeError):
-            year_built = 1980
-            
-        # Execute criteria validation checks
         if 0 < price <= 750000 and beds >= 2 and city_name in commute_table:
             zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
@@ -158,7 +150,6 @@ def fetch_live_zillow_data():
                 "commute": commute_table.get(city_name, 35),
                 "beds": beds,
                 "baths": baths,
-                "yearBuilt": year_built,
                 "type": str(item.get("property_type") or item.get("homeType") or "Condo").title(),
                 "link": zillow_deep_link
             })
