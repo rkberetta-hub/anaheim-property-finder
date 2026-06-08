@@ -56,7 +56,7 @@ def fetch_live_zillow_data():
         querystring = {
             "location": loc,
             "listType": "for-sale",
-            "maxPrice": "600000",
+            "maxPrice": "750000",
             "beds": "2",
             "page": "1"
         }
