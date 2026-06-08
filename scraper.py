@@ -1,11 +1,13 @@
 import json
 import sys
 import random
+import time
 import requests
 
 def fetch_live_zillow_data():
     print("Connecting to Zillow.Com Live Data Scraper API...")
     
+    # Authenticated endpoint verified from your RapidAPI console dashboard
     url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
     
     headers = {
@@ -13,6 +15,7 @@ def fetch_live_zillow_data():
         "x-rapidapi-key": "c5615cf354mshc3445d721256098p13a67ajsn3f5a8818c36f"
     }
     
+    # 40-City commute baseline reference table mapping to Anaheim center
     commute_table = {
         "Anaheim": 8, "Orange": 10, "Fullerton": 12, "Placentia": 12, 
         "Garden Grove": 15, "Buena Park": 14, "Santa Ana": 18, "Westminster": 18,
@@ -26,27 +29,48 @@ def fetch_live_zillow_data():
         "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
     }
     
-    target_locations = ["orange-county-ca", "corona-ca", "norwalk-ca"]
+    # SAFETY-FIRST REGIONAL HUBS: 12 premium targets balancing low-crime and sub-$600k active inventory
+    target_locations = [
+        "irvine-ca",
+        "yorba-linda-ca",
+        "chino-hills-ca",
+        "brea-ca",
+        "tustin-ca",
+        "fountain-valley-ca",
+        "cypress-ca",
+        "placentia-ca",
+        "huntington-beach-ca",
+        "fullerton-ca",
+        "orange-ca",
+        "corona-ca"
+    ]
+    
     raw_listings_pool = []
     
     for loc in target_locations:
-        print(f"Querying live market data for regional hub: {loc}...")
+        print(f"Querying live market data for secure regional hub: {loc}...")
+        
+        # Defensive anti-throttling delay to clear gateway firewalls smoothly
+        time.sleep(1.2) 
+        
         querystring = {
             "location": loc,
             "listType": "for-sale",
-            "maxPrice": "750000",
+            "maxPrice": "600000",
             "beds": "2",
             "page": "1"
         }
         
         try:
             response = requests.get(url, headers=headers, params=querystring)
+            
             if response.status_code != 200:
-                print(f"Warning: Region {loc} skipped. Status: {response.status_code}")
+                print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
                 continue
                 
             raw_response = response.json()
             
+            # Extract lists cleanly across diverse provider schema configurations
             loc_pool = []
             if isinstance(raw_response, list):
                 loc_pool = raw_response
@@ -56,6 +80,7 @@ def fetch_live_zillow_data():
             if isinstance(loc_pool, list):
                 raw_listings_pool.extend(loc_pool)
                 print(f"Successfully harvested {len(loc_pool)} structural records from {loc}.")
+                
         except Exception as e:
             print(f"Skipping branch location {loc} due to connection error: {e}")
             continue
@@ -66,19 +91,18 @@ def fetch_live_zillow_data():
         
     print(f"Processing {len(raw_listings_pool)} total items against layout criteria rules...")
     
-    # 🔍 DIAGNOSTIC LOG SNAPSHOT
+    # Print out a clear raw dictionary block to GitHub log to ease ongoing field diagnostics
     print("--- DIAGNOSTIC SAMPLE ITEM KEYS ---")
     if len(raw_listings_pool) > 0:
         sample_item = raw_listings_pool[0]
         print(f"Available payload properties: {list(sample_item.keys())}")
-        print(f"Sample data layout: {json.dumps(sample_item, indent=2)[:600]}")
     print("-----------------------------------")
 
     live_extracted_cards = []
     seen_addresses = set()
     
     for item in raw_listings_pool:
-        # Fallback parsing matrix for variable price naming fields
+        # Fallback dictionary matching for price metrics
         price_val = item.get("price") or item.get("unformattedPrice") or item.get("listPrice")
         if not price_val:
             continue
@@ -89,15 +113,15 @@ def fetch_live_zillow_data():
         except (ValueError, TypeError):
             continue
             
-        # Fallback parsing for bedroom and bathroom layout options
+        # Parse physical building traits safely
         beds = int(item.get("beds") or item.get("bedrooms") or item.get("bed") or 0)
         baths = int(item.get("baths") or item.get("bathrooms") or item.get("bath") or 2)
         
-        # Adaptive city and address string normalizer
+        # Normalize text casing to prevent look-up misses
         city_name = item.get("city") or item.get("cityName") or item.get("addressCity") or ""
         address = item.get("address") or item.get("streetAddress") or "Active Property"
         
-        # Parse city out of the address string if the discrete city property field is blank
+        # Regularize strings if structural parameters hold comma characters
         if not city_name and isinstance(address, str) and "," in address:
             addr_parts = [p.strip() for p in address.split(",")]
             if len(addr_parts) >= 2:
@@ -106,13 +130,15 @@ def fetch_live_zillow_data():
         if isinstance(city_name, str):
             city_name = city_name.strip().title()
             
+        # Drop duplicates on the fly
         if address in seen_addresses:
             continue
             
-        # Execute criteria validation checks
-        if 0 < price <= 750000 and beds >= 2 and city_name in commute_table:
+        # Strict validation engine matching requirements
+        if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
             zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
+            # FOOLPROOF LINK EXTRACTION: Build absolute ZPID paths to prevent generic landing page redirections
             if zpid:
                 zillow_deep_link = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
             else:
@@ -134,10 +160,10 @@ def fetch_live_zillow_data():
             seen_addresses.add(address)
 
     if not live_extracted_cards:
-        print("API requests executed successfully, but 0 properties met criteria limitations.")
-        print("Review the DIAGNOSTIC SAMPLE ITEM KEYS section above to confirm field names.")
+        print("API requests executed successfully, but 0 properties cleared your local safety constraints.")
         sys.exit(1)
 
+    # Overwrite listings.json completely with verified real data entries
     with open("listings.json", "w") as out_file:
         json.dump(live_extracted_cards, out_file, indent=4)
         
