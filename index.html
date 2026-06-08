@@ -1,17 +1,19 @@
+Here is the complete, fully integrated index.html file. It contains all your adjustments: the $750,000 price cap, the responsive checkbox multi-selector (with manufactured homes turned off by default), and the premium "High to Low" default sorting hierarchy.
+
+You can copy and paste this entire block directly into your repository:
+
+HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anaheim Commuter Dashboard</title>
-    <!-- Tailwind CSS for modern responsive utility styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for layout icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
-    <!-- Main Navigation Header -->
     <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
@@ -29,10 +31,8 @@
         </div>
     </header>
 
-    <!-- App Layout Workspace -->
     <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        <!-- Sidebar Controls & Filtering Suite -->
         <aside class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit lg:sticky lg:top-24">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="font-bold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
@@ -42,17 +42,15 @@
             </div>
 
             <div class="space-y-5">
-                <!-- Max Price Slider Component -->
                 <div>
                     <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
                         <span>Max Purchase Price</span> 
                         <span id="price-lbl" class="text-blue-600 font-black text-sm">$750,000</span>
-                   </label>
+                    </label>
                     <input type="range" id="price-slider" min="300000" max="750000" step="5000" value="750000" 
                            class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
                 </div>
 
-                <!-- Max Commute Radius Slider Component -->
                 <div>
                     <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
                         <span>Max Commute to Anaheim</span> 
@@ -62,7 +60,6 @@
                            class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
                 </div>
 
-                <!-- Minimum Bedrooms Filter Button Array -->
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-2">Minimum Bedrooms</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -71,12 +68,33 @@
                     </div>
                 </div>
 
-                <!-- Sort Layout Selector Matrix -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Property Types</label>
+                    <div class="space-y-2 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-medium text-slate-700">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="condo" checked>
+                            <span>Condo / Apartment</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="townhouse" checked>
+                            <span>Townhouse</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="single" checked>
+                            <span>Single Family Home</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="manufactured">
+                            <span>Manufactured / Mobile</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-2">Sort Results By</label>
                     <select id="sort-picker" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="p-desc" selected>Purchase Price: High to Low</option>
                         <option value="p-asc">Purchase Price: Low to High</option>
-                        <option value="p-desc">Purchase Price: High to Low</option>
                         <option value="c-asc">Commute Profile: Shortest Drive</option>
                         <option value="m-asc">Total Monthly Outflow: Lowest First</option>
                     </select>
@@ -84,7 +102,6 @@
             </div>
         </aside>
 
-        <!-- Listing Output Matrix Grid -->
         <section class="col-span-1 lg:col-span-3">
             <div class="mb-4">
                 <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">
@@ -92,21 +109,17 @@
                 </p>
             </div>
 
-            <!-- Card Render Container -->
             <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Data injection point -->
-            </div>
+                </div>
 
-            <!-- Zero State Error Fallback Display Component -->
             <div id="empty-state" class="hidden text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
                 <div class="text-slate-200 text-6xl mb-4"><i class="fa-solid fa-building-circle-exclamation"></i></div>
                 <h3 class="text-base font-bold text-slate-900 mb-1">No Properties Found Within Filter Range</h3>
-                <p class="text-slate-500 text-xs max-w-xs mx-auto">Adjust your price cap or travel criteria sliders to pull more regional listings from the active JSON feed.</p>
+                <p class="text-slate-500 text-xs max-w-xs mx-auto">Adjust your price cap, travel criteria, or property type selections to pull more regional listings from the active JSON feed.</p>
             </div>
         </section>
     </main>
 
-    <!-- Runtime Client Script Pipeline Logic -->
     <script>
         let livePropertyFeed = [];
         let activeMinBeds = 2;
@@ -157,10 +170,20 @@
             const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
             const selectedSortOrder = document.getElementById('sort-picker').value;
 
+            // Gather values of all currently checked boxes
+            const checkedBoxes = Array.from(document.querySelectorAll('.type-chk:checked'));
+            const activeTypes = checkedBoxes.map(chk => chk.value);
+
             let filteredArray = livePropertyFeed.filter(property => {
                 if (property.price > currentPriceMax) return false;
                 if (property.commute > currentCommuteMax) return false;
                 if (property.beds < activeMinBeds) return false;
+                
+                // Dynamic Multi-Select Logic Evaluation Pass
+                const normalizedType = (property.type || "").toLowerCase();
+                const matchesAnyCheckedType = activeTypes.some(typeKey => normalizedType.includes(typeKey));
+                
+                if (!matchesAnyCheckedType) return false;
                 return true;
             });
 
@@ -192,10 +215,16 @@
                 itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150";
                 
                 // Select icon design depending on property type attributes
-                const propertyIconClass = listing.type === 'Townhouse' ? 'fa-solid fa-house-chimney' : 'fa-solid fa-building';
+                let propertyIconClass = 'fa-solid fa-building';
+                if ((listing.type || "").toLowerCase().includes("townhouse")) {
+                    propertyIconClass = 'fa-solid fa-house-chimney';
+                } else if ((listing.type || "").toLowerCase().includes("single")) {
+                    propertyIconClass = 'fa-solid fa-house font-black';
+                } else if ((listing.type || "").toLowerCase().includes("manufactured") || (listing.type || "").toLowerCase().includes("mobile")) {
+                    propertyIconClass = 'fa-solid fa-caravan';
+                }
 
                 itemContainerNode.innerHTML = `
-                    <!-- Generic Icon Image Box Placeholder -->
                     <div class="relative h-44 bg-slate-100/70 flex items-center justify-center border-b border-slate-100">
                         <div class="text-slate-300 text-6xl">
                             <i class="${propertyIconClass}"></i>
@@ -221,7 +250,6 @@
                                 <span class="flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-slate-400"></i> $${listing.hoa}/mo HOA</span>
                             </div>
 
-                            <!-- Underwriting Cost Output Sub-Matrix -->
                             <div class="bg-slate-50/80 rounded-xl p-3.5 text-xs mb-4 space-y-1.5 border border-slate-100">
                                 <div class="flex justify-between text-slate-500">
                                     <span>P&I Financed Payment:</span>
@@ -260,6 +288,11 @@
             renderInterface();
         });
 
+        // Event listener hooks for multi-checkbox arrays
+        document.querySelectorAll('.type-chk').forEach(checkboxElement => {
+            checkboxElement.addEventListener('change', renderInterface);
+        });
+
         document.getElementById('sort-picker').addEventListener('change', renderInterface);
 
         document.querySelectorAll('.bed-btn').forEach(buttonElement => {
@@ -274,11 +307,17 @@
         });
 
         document.getElementById('reset-filters').addEventListener('click', () => {
-            document.getElementById('price-slider').value = 600000;
-            document.getElementById('price-lbl').innerText = "$600,000";
+            document.getElementById('price-slider').value = 750000;
+            document.getElementById('price-lbl').innerText = "$750,000";
             document.getElementById('commute-slider').value = 60;
             document.getElementById('commute-lbl').innerText = "60 mins";
-            document.getElementById('sort-picker').value = 'p-asc';
+            
+            // Check everything except manufactured homes on view reset
+            document.querySelectorAll('.type-chk').forEach(chk => {
+                chk.checked = (chk.value !== 'manufactured');
+            });
+            
+            document.getElementById('sort-picker').value = 'p-desc';
             document.querySelector('[data-beds="2"]').click();
             renderInterface();
         });
