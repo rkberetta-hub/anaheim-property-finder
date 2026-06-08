@@ -34,7 +34,7 @@ def fetch_live_zillow_data():
         querystring = {
             "location": loc,
             "listType": "for-sale",
-            "maxPrice": "600000",
+            "maxPrice": "750000",
             "beds": "2",
             "page": "1"
         }
@@ -110,7 +110,7 @@ def fetch_live_zillow_data():
             continue
             
         # Execute criteria validation checks
-        if 0 < price <= 600000 and beds >= 2 and city_name in commute_table:
+        if 0 < price <= 750000 and beds >= 2 and city_name in commute_table:
             zpid = item.get("zpid") or item.get("id") or item.get("property_id")
             
             if zpid:
