@@ -1,3 +1,19 @@
+That is a classic copy-paste compile fail on my part. If you open your browser's developer console (F12), you'll see a massive syntax crash.
+
+Inside the JavaScript filter block, I accidentally used a Python-style comment marker (#) instead of the standard JavaScript comment marker (//):
+
+JavaScript
+// ❌ WHAT I WROTE:
+# NEW: Drop out un-liked listings instantly...
+
+//  WHAT IT SHOULD BE:
+// NEW: Drop out un-liked listings instantly...
+Because browsers have no idea what to do with a standalone # inside a script tag, it throws an unhandled exception that breaks the entire layout compilation, leaving your dashboard permanently stuck at 0 results.
+
+The Corrected, Full Code Payload
+Here is the fully patched and sanitized index.html file with that syntax line fixed. You can safely replace the whole file on GitHub to bring your terminal results back to life:
+
+HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -151,7 +167,6 @@
         let livePropertyFeed = [];
         let activeMinBeds = 2;
         
-        // NEW: Pull existing liked property IDs array out of browser cache storage
         let likedListings = JSON.parse(localStorage.getItem('likedAnaheimListings')) || [];
 
         const INTEREST_RATE_APR = 0.0648; 
@@ -195,15 +210,14 @@
             };
         };
 
-        // NEW: Execution logic to cleanly toggle IDs inside your favorites storage array
         window.toggleLikeListing = (id) => {
             const stringId = String(id);
             const index = likedListings.indexOf(stringId);
             
             if (index > -1) {
-                likedListings.splice(index, 1); // Unlike item
+                likedListings.splice(index, 1);
             } else {
-                likedListings.push(stringId); // Like item
+                likedListings.push(stringId);
             }
             
             localStorage.setItem('likedAnaheimListings', JSON.stringify(likedListings));
@@ -214,18 +228,17 @@
             const currentPriceMax = parseInt(document.getElementById('price-slider').value);
             const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
             const selectedSortOrder = document.getElementById('sort-picker').value;
-            const showFavoritesOnly = document.getElementById('fav-toggle').checked; // 👈 SELECTION DETECTOR
+            const showFavoritesOnly = document.getElementById('fav-toggle').checked;
 
             const checkedBoxes = Array.from(document.querySelectorAll('.type-chk:checked'));
             const activeTypes = checkedBoxes.map(chk => chk.value);
 
-            // NEW: Synchronize live counter badge value inside sidebar controls
             document.getElementById('fav-counter').innerText = likedListings.length;
 
             let filteredArray = livePropertyFeed.filter(property => {
                 const propIdString = String(property.id);
                 
-                # NEW: Drop out un-liked listings instantly if the Favorites filter toggle is set to Active
+                // Fixed standard comment notation used here to prevent parsing error
                 if (showFavoritesOnly && !likedListings.includes(propIdString)) return false;
 
                 if (property.price > currentPriceMax) return false;
@@ -275,7 +288,6 @@
                     propertyIconClass = 'fa-solid fa-caravan';
                 }
 
-                // NEW: Dynamic evaluation to style active hearts vs inactive hearts on the layout template
                 const isItemLiked = likedListings.includes(String(listing.id));
                 const heartButtonIconClass = isItemLiked ? 'fa-solid fa-heart text-rose-500 scale-110' : 'fa-regular fa-heart text-slate-400 hover:text-rose-500';
 
@@ -352,8 +364,6 @@
         });
 
         document.getElementById('sort-picker').addEventListener('change', renderInterface);
-        
-        // NEW: Event listener to refresh display output arrays when toggle states shift
         document.getElementById('fav-toggle').addEventListener('change', renderInterface);
 
         document.querySelectorAll('.bed-btn').forEach(buttonElement => {
@@ -372,8 +382,6 @@
             document.getElementById('price-lbl').innerText = "$750,000";
             document.getElementById('commute-slider').value = 60;
             document.getElementById('commute-lbl').innerText = "60 mins";
-            
-            // NEW: Turn off favorites isolation filter on master system reset
             document.getElementById('fav-toggle').checked = false;
             
             document.querySelectorAll('.type-chk').forEach(chk => {
