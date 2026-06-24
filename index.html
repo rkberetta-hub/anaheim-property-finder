@@ -117,7 +117,7 @@
 
                 <!-- Display Grid container -->
                 <div id="matrix-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Cards injected here -->
+                    <!-- Cards injected dynamically here -->
                 </div>
 
                 <!-- Fallback empty state block component container -->
@@ -232,6 +232,23 @@
             evaluateFilterMatrix();
         }
 
+        function getPropertyVisuals(item) {
+            // Returns an icon and background utility template when image fields fail or are blank
+            const type = (item.propertyType || '').toLowerCase();
+            
+            if (item.isManufactured || type.includes('manufactured') || type.includes('mobile')) {
+                return { icon: 'fa-caravan', bg: 'bg-amber-50 text-amber-600 border border-amber-100/70' };
+            }
+            if (type.includes('condo') || type.includes('townhouse')) {
+                return { icon: 'fa-building-user', bg: 'bg-sky-50 text-sky-600 border border-sky-100/70' };
+            }
+            if (type.includes('apt') || type.includes('apartment') || type.includes('multi')) {
+                return { icon: 'fa-building', bg: 'bg-purple-50 text-purple-600 border border-purple-100/70' };
+            }
+            // Default Fallback representing Detached Standalone Family Houses
+            return { icon: 'fa-house', bg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/70' };
+        }
+
         function evaluateFilterMatrix() {
             const maxPrice = parseInt(priceSlider.value);
             const minBeds = parseInt(bedsSelector.value);
@@ -271,12 +288,24 @@
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition duration-200 flex flex-col relative";
                 
-                const imageSrc = item.imgSrc || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=500&q=80';
+                // Deterministic media element render block check
+                let mediaElementHtml = '';
+                if (item.imgSrc && item.imgSrc.trim() !== '') {
+                    mediaElementHtml = `<img src="${item.imgSrc}" alt="Property Display" class="w-full h-full object-cover">`;
+                } else {
+                    const design = getPropertyVisuals(item);
+                    mediaElementHtml = `
+                        <div class="w-full h-full flex flex-col items-center justify-center gap-2 ${design.bg}">
+                            <i class="fa-solid ${design.icon} text-5xl opacity-85"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-wider opacity-60">No Live Photo Feed</span>
+                        </div>
+                    `;
+                }
 
                 card.innerHTML = `
                     <div class="relative h-48 bg-slate-100 overflow-hidden shrink-0">
-                        <img src="${imageSrc}" alt="Property Display" class="w-full h-full object-cover">
-                        <div class="absolute top-3 right-3">
+                        ${mediaElementHtml}
+                        <div class="absolute top-3 right-3 z-10">
                             <button onclick="toggleLike('${item.zpid}')" class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center cursor-pointer shadow-sm text-lg hover:bg-white transition ${isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}">
                                 <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
                             </button>
