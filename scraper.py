@@ -30,7 +30,6 @@ COHORT_A = [
     "Cypress", "La Palma", "Los Alamitos", "Stanton", "Westminster", 
     "Fountain Valley", "Newport Beach", "Seal Beach", "Villa Park",
     "Alhambra", "Arcadia", "Azusa", "Baldwin Park", "Covina",
-    # New 90-Min Reverse-Commute Entries:
     "Oceanside", "Vista", "Riverside"
 ]
 
@@ -60,7 +59,6 @@ def fetch_city_listings(city, max_retries=4):
         "X-RapidAPI-Key": API_KEY,
         "X-RapidAPI-Host": API_HOST
     }
-    # Adapt query parameters to match your specific Zillow live data provider payload requirements
     params = {
         "location": f"{city}, CA",
         "status": "forSale",
@@ -75,7 +73,6 @@ def fetch_city_listings(city, max_retries=4):
             
             if response.status_code == 200:
                 data = response.json()
-                # Safely dig out the node containing the raw property arrays
                 results = data.get("listings", []) or data.get("results", []) or data.get("props", [])
                 return results
             elif response.status_code == 429:
@@ -97,10 +94,10 @@ def process_and_normalize(raw_data, city_name):
     """Normalizes vendor-specific variants into consistent frontend data properties."""
     normalized = []
     for item in raw_data:
-        # Filter out manufactured/mobile homes at ingestion baseline
         prop_type = str(item.get("propertyType", "") or item.get("homeType", "")).lower()
-        if "manufactured" in prop_type or "mobile" in prop_type:
-            continue
+        
+        # Flag manufactured homes instead of skipping them
+        is_manufactured = "manufactured" in prop_type or "mobile" in prop_type
             
         price = item.get("price", 0)
         if not price or price > PRICE_MAX:
@@ -114,7 +111,8 @@ def process_and_normalize(raw_data, city_name):
             "address": item.get("address", "Address Not Disclosed"),
             "city": city_name,
             "imgSrc": item.get("imgSrc") or item.get("image") or "",
-            "propertyType": prop_type.replace("_", " ").title(),
+            "propertyType": "Manufactured" if is_manufactured else prop_type.replace("_", " ").title(),
+            "isManufactured": is_manufactured,
             "url": item.get("detailUrl") or f"https://www.zillow.com/homedetails/{item.get('zpid')}_zpid/"
         })
     return normalized
@@ -132,14 +130,12 @@ def merge_and_save_data(new_listings, active_cities):
             print(f" Could not read existing {OUTPUT_FILE} safely ({e}). Initializing clean baseline.")
             existing_data = []
 
-    # Strip out past entries belonging only to the cities processed today
     active_cities_upper = [c.upper() for c in active_cities]
     purged_dataset = [
         listing for listing in existing_data 
         if str(listing.get("city", "")).upper() not in active_cities_upper
     ]
     
-    # Merge and update records
     final_dataset = purged_dataset + new_listings
     
     with open(OUTPUT_FILE, 'w') as f:
@@ -163,7 +159,6 @@ def main():
             all_fresh_listings.extend(normalized_results)
             print(f"   Found {len(normalized_results)} valid listings matching baseline scope.")
         
-        # Safe polite gap to protect API endpoint load stability
         time.sleep(1.2)
         
     merge_and_save_data(all_fresh_listings, active_cities)
