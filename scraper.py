@@ -94,9 +94,7 @@ def process_and_normalize(raw_data, city_name):
     """Normalizes vendor-specific variants into consistent frontend data properties."""
     normalized = []
     for item in raw_data:
-        prop_type = str(item.get("propertyType", "") or item.get("homeType", "")).lower()
-        
-        # Flag manufactured homes instead of skipping them
+        prop_type = str(item.get("propertyType") or item.get("homeType") or "House").lower()
         is_manufactured = "manufactured" in prop_type or "mobile" in prop_type
             
         price = item.get("price", 0)
