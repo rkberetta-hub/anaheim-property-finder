@@ -232,21 +232,28 @@
             evaluateFilterMatrix();
         }
 
-        function getPropertyVisuals(item) {
-            // Returns an icon and background utility template when image fields fail or are blank
-            const type = (item.propertyType || '').toLowerCase();
+        function getPropertyDetails(item) {
+            // Safe fallback compilation to handle missing properties and resolve the "undefined" label bug
+            const rawType = item.propertyType || item.homeType || 'House';
+            const lowerType = rawType.toLowerCase();
             
-            if (item.isManufactured || type.includes('manufactured') || type.includes('mobile')) {
-                return { icon: 'fa-caravan', bg: 'bg-amber-50 text-amber-600 border border-amber-100/70' };
+            let cleanLabel = rawType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            let iconClass = 'fa-house'; 
+            let bgStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-100/70';
+
+            if (item.isManufactured || lowerType.includes('manufactured') || lowerType.includes('mobile')) {
+                cleanLabel = "Manufactured";
+                iconClass = 'fa-caravan';
+                bgStyle = 'bg-amber-50 text-amber-600 border border-amber-100/70';
+            } else if (lowerType.includes('condo') || lowerType.includes('townhouse') || lowerType.includes('townhome')) {
+                iconClass = 'fa-building-user';
+                bgStyle = 'bg-sky-50 text-sky-600 border border-sky-100/70';
+            } else if (lowerType.includes('apt') || lowerType.includes('apartment') || lowerType.includes('multi')) {
+                iconClass = 'fa-building';
+                bgStyle = 'bg-purple-50 text-purple-600 border border-purple-100/70';
             }
-            if (type.includes('condo') || type.includes('townhouse')) {
-                return { icon: 'fa-building-user', bg: 'bg-sky-50 text-sky-600 border border-sky-100/70' };
-            }
-            if (type.includes('apt') || type.includes('apartment') || type.includes('multi')) {
-                return { icon: 'fa-building', bg: 'bg-purple-50 text-purple-600 border border-purple-100/70' };
-            }
-            // Default Fallback representing Detached Standalone Family Houses
-            return { icon: 'fa-house', bg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/70' };
+
+            return { label: cleanLabel, icon: iconClass, bg: bgStyle };
         }
 
         function evaluateFilterMatrix() {
@@ -288,15 +295,16 @@
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition duration-200 flex flex-col relative";
                 
-                // Deterministic media element render block check
+                // Resolve details and layout vectors
+                const meta = getPropertyDetails(item);
+                
                 let mediaElementHtml = '';
                 if (item.imgSrc && item.imgSrc.trim() !== '') {
                     mediaElementHtml = `<img src="${item.imgSrc}" alt="Property Display" class="w-full h-full object-cover">`;
                 } else {
-                    const design = getPropertyVisuals(item);
                     mediaElementHtml = `
-                        <div class="w-full h-full flex flex-col items-center justify-center gap-2 ${design.bg}">
-                            <i class="fa-solid ${design.icon} text-5xl opacity-85"></i>
+                        <div class="w-full h-full flex flex-col items-center justify-center gap-2 ${meta.bg}">
+                            <i class="fa-solid ${meta.icon} text-5xl opacity-85"></i>
                             <span class="text-[10px] uppercase font-bold tracking-wider opacity-60">No Live Photo Feed</span>
                         </div>
                     `;
@@ -311,7 +319,7 @@
                             </button>
                         </div>
                         <div class="absolute bottom-3 left-3 bg-slate-900/70 backdrop-blur-xs text-white text-xs px-2 py-1 rounded font-semibold tracking-wide uppercase">
-                            ${item.propertyType}
+                            ${meta.label}
                         </div>
                     </div>
                     
