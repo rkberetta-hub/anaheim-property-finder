@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate Hub Registry</title>
+    <title>Anaheim Real Estate Dashboard</title>
     <!-- Tailwind CSS Engine Deployment -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -20,7 +20,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <i class="fa-solid fa-chart-pie text-indigo-600"></i> Tactical Property Matrix
+                    <i class="fa-solid fa-house-laptop text-indigo-600"></i> Anaheim Real Estate Dashboard
                 </h1>
                 <p class="text-sm text-slate-500">Staggered regional reverse-commute tracking grid</p>
             </div>
@@ -77,18 +77,27 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Active Target Hub Nodes</label>
                         <div id="city-checkbox-container" class="space-y-1.5 max-h-48 overflow-y-auto border border-slate-100 p-3 rounded-lg bg-slate-50 text-sm">
-                            <!-- Populated dynamically via JavaScript execution -->
                             <span class="text-slate-400 text-xs italic">Analyzing available records...</span>
                         </div>
                     </div>
 
-                    <!-- Heart/Favorites Intercept Toggle -->
-                    <div class="pt-4 border-t border-slate-100">
+                    <!-- Property Type Specific Toggles -->
+                    <div class="pt-4 border-t border-slate-100 space-y-3">
+                        <!-- Manufactured Homes Filter Toggle -->
+                        <label class="relative flex items-center cursor-pointer select-none">
+                            <input type="checkbox" id="filter-manufactured" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <span class="ms-3 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-caravan text-slate-400"></i> Include Manufactured
+                            </span>
+                        </label>
+
+                        <!-- Heart/Favorites Intercept Toggle -->
                         <label class="relative flex items-center cursor-pointer select-none">
                             <input type="checkbox" id="filter-fav-only" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
                             <span class="ms-3 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                <i class="fa-solid fa-heart text-rose-500"></i> Show Liked Properties Only
+                                <i class="fa-solid fa-heart text-rose-500"></i> Show Liked Only
                             </span>
                         </label>
                     </div>
@@ -108,7 +117,7 @@
 
                 <!-- Display Grid container -->
                 <div id="matrix-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Standard card injection nodes generated via JS -->
+                    <!-- Cards injected here -->
                 </div>
 
                 <!-- Fallback empty state block component container -->
@@ -132,6 +141,7 @@
         const priceSlider = document.getElementById('filter-price');
         const priceDisplay = document.getElementById('price-display');
         const bedsSelector = document.getElementById('filter-beds');
+        const mfgToggle = document.getElementById('filter-manufactured');
         const favToggle = document.getElementById('filter-fav-only');
         const cityContainer = document.getElementById('city-checkbox-container');
         const clearBtn = document.getElementById('btn-clear');
@@ -149,7 +159,6 @@
                 allListings = await response.json();
             } catch (err) {
                 console.error("Pipeline read execution error:", err);
-                // Production-grade fallback mocking if structure has not completely generated yet on local disk
                 allListings = [];
             }
             
@@ -164,6 +173,7 @@
                 evaluateFilterMatrix();
             });
             bedsSelector.addEventListener('change', evaluateFilterMatrix);
+            mfgToggle.addEventListener('change', evaluateFilterMatrix);
             favToggle.addEventListener('change', evaluateFilterMatrix);
             clearBtn.addEventListener('click', resetDefaults);
         }
@@ -174,7 +184,6 @@
         }
 
         function buildDynamicCityFilters() {
-            // Extract unique city keys existing actively in captured payload rows
             const uniqueCities = [...new Set(allListings.map(item => item.city))].sort();
             
             if (uniqueCities.length === 0) {
@@ -191,8 +200,6 @@
                     <span>${cityName}</span>
                 `;
                 cityContainer.appendChild(row);
-                
-                // Bind internal callback execution change loops
                 row.querySelector('input').addEventListener('change', evaluateFilterMatrix);
             });
         }
@@ -218,6 +225,7 @@
             priceSlider.value = 750000;
             priceDisplay.textContent = "$750,000";
             bedsSelector.value = "2";
+            mfgToggle.checked = true;
             favToggle.checked = false;
             
             document.querySelectorAll('.dynamic-city-cb').forEach(cb => cb.checked = true);
@@ -227,23 +235,21 @@
         function evaluateFilterMatrix() {
             const maxPrice = parseInt(priceSlider.value);
             const minBeds = parseInt(bedsSelector.value);
+            const includeMfg = mfgToggle.checked;
             const showOnlyFavs = favToggle.checked;
             
-            // Gather array list of globally checked elements
             const checkedCities = Array.from(document.querySelectorAll('.dynamic-city-cb:checked')).map(cb => cb.value);
 
-            // Execute programmatic compound filter parsing
             let filteredResults = allListings.filter(item => {
                 if (item.price > maxPrice) return false;
                 if (item.beds < minBeds) return false;
                 if (checkedCities.length > 0 && !checkedCities.includes(item.city)) return false;
+                if (!includeMfg && item.isManufactured) return false;
                 if (showOnlyFavs && !likedProperties.includes(item.zpid)) return false;
                 return true;
             });
 
-            // Enforce default sorting paradigm explicitly: High-To-Low Evaluation Matrix
             filteredResults.sort((a, b) => b.price - a.price);
-
             renderDisplayCards(filteredResults);
         }
 
@@ -265,7 +271,6 @@
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition duration-200 flex flex-col relative";
                 
-                // Fallback rendering asset logic check
                 const imageSrc = item.imgSrc || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=500&q=80';
 
                 card.innerHTML = `
@@ -306,7 +311,6 @@
             });
         }
 
-        // Trigger dynamic layout load pipeline
         document.addEventListener('DOMContentLoaded', initDashboard);
     </script>
 </body>
