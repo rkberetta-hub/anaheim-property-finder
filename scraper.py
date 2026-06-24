@@ -1,168 +1,172 @@
+import os
 import json
-import sys
-import random
 import time
+import datetime
 import requests
 
-def fetch_live_zillow_data():
-    print("Connecting to Zillow.Com Live Data Scraper API (Paid Tier Mode)...")
+# ==========================================
+# CONFIGURATION & API SETTINGS
+# ==========================================
+API_URL = "https://zillow-com-real-estate-api.p.rapidapi.com/search"  # Update to match your provider endpoint
+API_KEY = "YOUR_REAL_ESTATE_API_KEY_HERE"
+API_HOST = "zillow-com-real-estate-api.p.rapidapi.com"
+OUTPUT_FILE = "listings.json"
+
+PRICE_MAX = 750000
+
+# ==========================================
+# GEOGRAPHIC COHORTS (STRATIFIED BY VELOCITY)
+# ==========================================
+
+# Core high-turnover hubs monitored 100% daily
+DAILY_HUBS = [
+    "Anaheim", "Fullerton", "Orange", "Santa Ana", "Tustin", 
+    "Costa Mesa", "Garden Grove", "Huntington Beach", "Irvine"
+]
+
+# Cohort A (Scraped on EVEN days of the year)
+COHORT_A = [
+    "Buena Park", "Placentia", "Yorba Linda", "Brea", "La Habra", 
+    "Cypress", "La Palma", "Los Alamitos", "Stanton", "Westminster", 
+    "Fountain Valley", "Newport Beach", "Seal Beach", "Villa Park",
+    "Alhambra", "Arcadia", "Azusa", "Baldwin Park", "Covina",
+    # New 90-Min Reverse-Commute Entries:
+    "Oceanside", "Vista", "Riverside"
+]
+
+# Cohort B (Scraped on ODD days of the year)
+COHORT_B = [
+    "El Monte", "Glendora", "Monrovia", "Pasadena", "Pomona", 
+    "Rosemead", "San Dimas", "San Gabriel", "Temple City", "West Covina",
+    "Chino", "Chino Hills", "Corona", "Fontana", "Ontario",
+    "Lake Forest", "Aliso Viejo", "Rancho Santa Margarita", "Mission Viejo",
+    "San Juan Capistrano", "Capistrano Beach"
+]
+
+def get_active_targets():
+    """Determines today's precise tracking grid based on day-of-year modulo."""
+    day_of_year = datetime.datetime.now().timetuple().tm_yday
+    is_even = (day_of_year % 2 == 0)
     
-    url = "https://zillow-com-live-data-scraper-api.p.rapidapi.com/bylocation"
+    active_cohort = COHORT_A if is_even else COHORT_B
+    cohort_label = "Cohort A (Even Day)" if is_even else "Cohort B (Odd Day)"
     
+    print(f"--- Initialization: Day of Year {day_of_year} ({cohort_label}) ---")
+    return DAILY_HUBS + active_cohort
+
+def fetch_city_listings(city, max_retries=4):
+    """Fetches real estate listings for a targeted city with exponential backoff handling."""
     headers = {
-        "x-rapidapi-host": "zillow-com-live-data-scraper-api.p.rapidapi.com",
-        "x-rapidapi-key": "c5615cf354mshc3445d721256098p13a67ajsn3f5a8818c36f"
+        "X-RapidAPI-Key": API_KEY,
+        "X-RapidAPI-Host": API_HOST
+    }
+    # Adapt query parameters to match your specific Zillow live data provider payload requirements
+    params = {
+        "location": f"{city}, CA",
+        "status": "forSale",
+        "maxPrice": str(PRICE_MAX)
     }
     
-    # 40-City commute baseline reference table mapping to Anaheim center
-    commute_table = {
-        "Anaheim": 8, "Orange": 10, "Fullerton": 12, "Placentia": 12, 
-        "Garden Grove": 15, "Buena Park": 14, "Santa Ana": 18, "Westminster": 18,
-        "Brea": 16, "Tustin": 20, "La Habra": 22, "Fountain Valley": 22, 
-        "Yorba Linda": 20, "Stanton": 12, "Cypress": 15, "La Palma": 15,
-        "Los Alamitos": 18, "Huntington Beach": 25, "Irvine": 22, "Lake Forest": 30,
-        "Mission Viejo": 35, "Costa Mesa": 26, "Norwalk": 28, "Cerritos": 25, 
-        "Whittier": 35, "La Mirada": 18, "Lakewood": 26, "Bellflower": 28, 
-        "Downey": 30, "Long Beach": 35, "Diamond Bar": 25, "Pomona": 35, 
-        "Corona": 38, "Riverside": 48, "Chino": 32, "Chino Hills": 28, 
-        "Eastvale": 34, "Norco": 36, "Ontario": 38, "Jurupa Valley": 44
-    }
+    delay = 2
+    for attempt in range(max_retries):
+        try:
+            print(f"   Querying dynamic payload for {city}...")
+            response = requests.get(API_URL, headers=headers, params=params, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Safely dig out the node containing the raw property arrays
+                results = data.get("listings", []) or data.get("results", []) or data.get("props", [])
+                return results
+            elif response.status_code == 429:
+                print(f"   [429 Rate Limit hit] Backing off. Retrying in {delay}s...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                print(f"   [Error] Received status code {response.status_code} for {city}")
+                return []
+        except Exception as e:
+            print(f"   [Exception] Connection failed on attempt {attempt + 1}: {e}")
+            time.sleep(delay)
+            delay *= 2
+            
+    print(f" ❌ Skipping {city} after failing all retry configurations.")
+    return []
+
+def process_and_normalize(raw_data, city_name):
+    """Normalizes vendor-specific variants into consistent frontend data properties."""
+    normalized = []
+    for item in raw_data:
+        # Filter out manufactured/mobile homes at ingestion baseline
+        prop_type = str(item.get("propertyType", "") or item.get("homeType", "")).lower()
+        if "manufactured" in prop_type or "mobile" in prop_type:
+            continue
+            
+        price = item.get("price", 0)
+        if not price or price > PRICE_MAX:
+            continue
+
+        normalized.append({
+            "zpid": str(item.get("zpid") or item.get("id")),
+            "price": price,
+            "beds": item.get("bedrooms") or item.get("beds") or 0,
+            "baths": item.get("bathrooms") or item.get("baths") or 0,
+            "address": item.get("address", "Address Not Disclosed"),
+            "city": city_name,
+            "imgSrc": item.get("imgSrc") or item.get("image") or "",
+            "propertyType": prop_type.replace("_", " ").title(),
+            "url": item.get("detailUrl") or f"https://www.zillow.com/homedetails/{item.get('zpid')}_zpid/"
+        })
+    return normalized
+
+def merge_and_save_data(new_listings, active_cities):
+    """Ensures staggered architecture persists old data while cleanly merging fresh scans."""
+    existing_data = []
     
-    # PRO-TIER EXPANSION: 40 comprehensive regional commuter destinations
-    target_locations = [
-        "anaheim-ca", "orange-ca", "fullerton-ca", "placentia-ca", "garden-grove-ca",
-        "buena-park-ca", "santa-ana-ca", "westminster-ca", "brea-ca", "tustin-ca",
-        "la-habra-ca", "fountain-valley-ca", "yorba-linda-ca", "stanton-ca", "cypress-ca",
-        "la-palma-ca", "los-alamitos-ca", "huntington-beach-ca", "irvine-ca", "lake-forest-ca",
-        "mission-viejo-ca", "costa-mesa-ca", "norwalk-ca", "cerritos-ca", "whittier-ca",
-        "la-mirada-ca", "lakewood-ca", "bellflower-ca", "downey-ca", "long-beach-ca",
-        "diamond-bar-ca", "pomona-ca", "corona-ca", "riverside-ca", "chino-ca",
-        "chino-hills-ca", "eastvale-ca", "norco-ca", "ontario-ca", "jurupa-valley-ca"
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, 'r') as f:
+                existing_data = json.load(f)
+            print(f" Successfully mapped {len(existing_data)} cached records from disk.")
+        except Exception as e:
+            print(f" Could not read existing {OUTPUT_FILE} safely ({e}). Initializing clean baseline.")
+            existing_data = []
+
+    # Strip out past entries belonging only to the cities processed today
+    active_cities_upper = [c.upper() for c in active_cities]
+    purged_dataset = [
+        listing for listing in existing_data 
+        if str(listing.get("city", "")).upper() not in active_cities_upper
     ]
     
-    raw_listings_pool = []
+    # Merge and update records
+    final_dataset = purged_dataset + new_listings
     
-    for loc in target_locations:
-        querystring = {
-            "location": loc,
-            "listType": "for-sale",
-            "maxPrice": "750000",
-            "beds": "2",
-            "page": "1"
-        }
+    with open(OUTPUT_FILE, 'w') as f:
+        json.dump(final_dataset, f, indent=4)
         
-        max_retries = 3
-        base_delay = 1.5
-        success = False
-        
-        for attempt in range(max_retries):
-            current_sleep = base_delay + (attempt * 2.0)
-            time.sleep(current_sleep)
-            
-            print(f"Querying live market data for regional hub: {loc} (Attempt {attempt + 1}/{max_retries})...")
-            
-            try:
-                response = requests.get(url, headers=headers, params=querystring)
-                
-                if response.status_code == 429:
-                    print(f"⚠️ Rate limit warning (429) for {loc}. Pacing request workflow execution...")
-                    time.sleep(4.0)
-                    continue
-                    
-                if response.status_code != 200:
-                    print(f"Warning: Region {loc} skipped. Server responded with status {response.status_code}")
-                    break
-                    
-                raw_response = response.json()
-                
-                loc_pool = []
-                if isinstance(raw_response, list):
-                    loc_pool = raw_response
-                elif isinstance(raw_response, dict):
-                    loc_pool = raw_response.get("results", raw_response.get("data", raw_response.get("props", raw_response.get("listings", []))))
-                
-                if isinstance(loc_pool, list):
-                    raw_listings_pool.extend(loc_pool)
-                    print(f"✅ Successfully harvested {len(loc_pool)} structural records from {loc}.")
-                    success = True
-                    break
-                    
-            except Exception as e:
-                print(f"Network error on {loc} during connection pass: {e}")
-                time.sleep(2.0)
-                continue
-        
-        if not success:
-            print(f"Skipping {loc} completely after failing retry attempts.")
+    print(f"\n Pipeline Complete: Wrote {len(new_listings)} new/updated rows.")
+    print(f" Database updated smoothly. Total visible inventory count: {len(final_dataset)}")
 
-    if not raw_listings_pool:
-        print("CRITICAL ERROR: No real estate records could be recovered from any API pipeline loops.")
-        sys.exit(1)
-        
-    print(f"Processing {len(raw_listings_pool)} total items against layout criteria rules...")
-
-    live_extracted_cards = []
-    seen_addresses = set()
+def main():
+    active_cities = get_active_targets()
+    print(f"Running pipeline across {len(active_cities)} total target hubs today.\n")
     
-    for item in raw_listings_pool:
-        price_val = item.get("price") or item.get("unformattedPrice") or item.get("listPrice")
-        if not price_val:
-            continue
-        try:
-            if isinstance(price_val, str):
-                price_val = price_val.replace("$", "").replace(",", "").split(".")[0]
-            price = int(price_val)
-        except (ValueError, TypeError):
-            continue
-            
-        beds = int(item.get("beds") or item.get("bedrooms") or item.get("bed") or 0)
-        baths = int(item.get("baths") or item.get("bathrooms") or item.get("bath") or 2)
+    all_fresh_listings = []
+    
+    for idx, city in enumerate(active_cities, 1):
+        print(f"[{idx}/{len(active_cities)}] Processing target: {city}")
+        raw_results = fetch_city_listings(city)
         
-        city_name = item.get("city") or item.get("cityName") or item.get("addressCity") or ""
-        address = item.get("address") or item.get("streetAddress") or "Active Property"
+        if raw_results:
+            normalized_results = process_and_normalize(raw_results, city)
+            all_fresh_listings.extend(normalized_results)
+            print(f"   Found {len(normalized_results)} valid listings matching baseline scope.")
         
-        if not city_name and isinstance(address, str) and "," in address:
-            addr_parts = [p.strip() for p in address.split(",")]
-            if len(addr_parts) >= 2:
-                city_name = addr_parts[-2]
-                
-        if isinstance(city_name, str):
-            city_name = city_name.strip().title()
-            
-        if address in seen_addresses:
-            continue
-            
-        if 0 < price <= 750000 and beds >= 2 and city_name in commute_table:
-            zpid = item.get("zpid") or item.get("id") or item.get("property_id")
-            
-            if zpid:
-                zillow_deep_link = f"https://www.zillow.com/homedetails/{zpid}_zpid/"
-            else:
-                addr_slug = f"{address} {city_name} CA".replace(" ", "+")
-                zillow_deep_link = f"https://www.zillow.com/homes/{addr_slug}_rb/"
-                
-            live_extracted_cards.append({
-                "id": zpid if zpid else random.randint(10000, 99999),
-                "address": address,
-                "city": f"{city_name}, CA",
-                "price": price,
-                "hoa": int(item.get("hoa") or item.get("hoa_fee") or random.randint(280, 410)),
-                "commute": commute_table.get(city_name, 35),
-                "beds": beds,
-                "baths": baths,
-                "type": str(item.get("property_type") or item.get("homeType") or "Condo").title(),
-                "link": zillow_deep_link
-            })
-            seen_addresses.add(address)
-
-    if not live_extracted_cards:
-        print("API requests executed successfully, but 0 properties met criteria limitations.")
-        sys.exit(1)
-
-    with open("listings.json", "w") as out_file:
-        json.dump(live_extracted_cards, out_file, indent=4)
+        # Safe polite gap to protect API endpoint load stability
+        time.sleep(1.2)
         
-    print(f"Pipeline complete! Saved {len(live_extracted_cards)} verified live listings to listings.json.")
+    merge_and_save_data(all_fresh_listings, active_cities)
 
 if __name__ == "__main__":
-    fetch_live_zillow_data()
+    main()
