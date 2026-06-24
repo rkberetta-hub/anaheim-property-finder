@@ -4,351 +4,357 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anaheim Real Estate Dashboard</title>
-    <!-- Tailwind CSS Engine Deployment -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
-    <!-- Top Status Banner -->
-    <div class="bg-indigo-900 text-white py-2 px-4 text-xs font-semibold tracking-wide shadow-inner flex justify-between items-center">
-        <span>🛡️ SAFE NEIGHBORHOOD SELECTION CRITERIA ACTIVE</span>
-        <span id="sync-timestamp" class="opacity-75">Loading Database State...</span>
-    </div>
-
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <i class="fa-solid fa-house-laptop text-indigo-600"></i> Anaheim Real Estate Dashboard
-                </h1>
-                <p class="text-sm text-slate-500">Staggered regional reverse-commute tracking grid</p>
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-sm">
+                    <i class="fa-solid fa-map-location-dot text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Anaheim Real Estate Dashboard</h1>
+                    <p class="text-xs text-slate-400">Dynamic External JSON Feed Pipeline</p>
+                </div>
             </div>
-            
-            <!-- Global State Count Metrics -->
-            <div class="flex gap-4 text-center sm:text-left self-start md:self-auto">
-                <div class="bg-slate-100 px-4 py-2 rounded-lg">
-                    <div id="metric-total" class="text-xl font-bold text-slate-900">0</div>
-                    <div class="text-xs text-slate-500 font-medium">Tracked Records</div>
-                </div>
-                <div class="bg-rose-50 px-4 py-2 rounded-lg border border-rose-100">
-                    <div id="metric-favorites" class="text-xl font-bold text-rose-600">0</div>
-                    <div class="text-xs text-rose-500 font-medium">Saved Units</div>
-                </div>
+            <div class="bg-slate-800 px-4 py-2 rounded-xl text-xs text-slate-300 border border-slate-700">
+                <i class="fa-solid fa-calculator text-blue-400 mr-1.5"></i> Est. Interest Rate: <span class="text-white font-bold">6.48%</span> | 15% Down Payment
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
-            <!-- CONTROLS & CONTROLLER PANEL BAR -->
-            <aside class="space-y-6 lg:col-span-1">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-6">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <h2 class="font-bold text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders text-slate-500"></i> Engine Filters
-                        </h2>
-                        <button id="btn-clear" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">Reset All</button>
-                    </div>
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <aside class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit lg:sticky lg:top-24">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-bold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-600"></i> Dashboard Filters
+                </h2>
+                <button id="reset-filters" class="text-xs text-blue-600 hover:underline font-semibold">Reset View</button>
+            </div>
 
-                    <!-- Price Filter Configuration -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Max Price Threshold</label>
-                        <div class="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                            <span>$250k</span>
-                            <span id="price-display" class="text-indigo-600">$750,000</span>
-                        </div>
-                        <input type="range" id="filter-price" min="250000" max="750000" step="10000" value="750000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                    </div>
+            <div class="space-y-5">
+                <div>
+                    <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                        <span>Max Purchase Price</span> 
+                        <span id="price-lbl" class="text-blue-600 font-black text-sm">$750,000</span>
+                    </label>
+                    <input type="range" id="price-slider" min="300000" max="750000" step="5000" value="750000" 
+                           class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
+                </div>
 
-                    <!-- Bed Count Threshold Selector -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Minimum Bedroom Count</label>
-                        <select id="filter-beds" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-xs focus:border-indigo-500 focus:outline-hidden">
-                            <option value="0">Any Room Configuration</option>
-                            <option value="1">1+ Bedrooms</option>
-                            <option value="2" selected>2+ Bedrooms</option>
-                            <option value="3">3+ Bedrooms</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                        <span>Max Commute to Anaheim</span> 
+                        <span id="commute-lbl" class="text-blue-600 font-black text-sm">60 mins</span>
+                    </label>
+                    <input type="range" id="commute-slider" min="5" max="60" step="5" value="60" 
+                           class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 border border-slate-200">
+                </div>
 
-                    <!-- Dynamic City Extraction Filter Option Checkbox Nest -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Active Target Hub Nodes</label>
-                        <div id="city-checkbox-container" class="space-y-1.5 max-h-48 overflow-y-auto border border-slate-100 p-3 rounded-lg bg-slate-50 text-sm">
-                            <span class="text-slate-400 text-xs italic">Analyzing available records...</span>
-                        </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Minimum Bedrooms</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" data-beds="2" class="bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-700 transition">2+ Beds</button>
+                        <button type="button" data-beds="3" class="bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition">3+ Beds</button>
                     </div>
+                </div>
 
-                    <!-- Property Type Specific Toggles -->
-                    <div class="pt-4 border-t border-slate-100 space-y-3">
-                        <!-- Manufactured Homes Filter Toggle -->
-                        <label class="relative flex items-center cursor-pointer select-none">
-                            <input type="checkbox" id="filter-manufactured" checked class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            <span class="ms-3 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                <i class="fa-solid fa-caravan text-slate-400"></i> Include Manufactured
-                            </span>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-2">Target Hub Nodes</label>
+                    <div id="city-checkbox-container" class="space-y-1.5 max-h-44 overflow-y-auto border border-slate-200 p-3 rounded-xl bg-slate-50 text-xs font-semibold text-slate-700">
+                        <span class="text-slate-400 italic">Extracting regional points...</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Property Types</label>
+                    <div class="space-y-2 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm font-medium text-slate-700">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="condo" checked>
+                            <span>Condo / Apartment</span>
                         </label>
-
-                        <!-- Heart/Favorites Intercept Toggle -->
-                        <label class="relative flex items-center cursor-pointer select-none">
-                            <input type="checkbox" id="filter-fav-only" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
-                            <span class="ms-3 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                <i class="fa-solid fa-heart text-rose-500"></i> Show Liked Only
-                            </span>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="townhouse" checked>
+                            <span>Townhouse</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="single" checked>
+                            <span>Single Family Home</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" class="type-chk w-4 h-4 rounded text-blue-600 bg-white border-slate-300 accent-blue-600" value="manufactured">
+                            <span>Manufactured / Mobile</span>
                         </label>
                     </div>
                 </div>
-            </aside>
 
-            <!-- MAIN GRID CONTENT PORTAL VIEW -->
-            <section class="lg:col-span-3 space-y-4">
-                <div class="flex justify-between items-center bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-xs">
-                    <p class="text-sm text-slate-500 font-medium">
-                        Showing <span id="filtered-count" class="font-bold text-slate-900">0</span> qualifying listings
-                    </p>
-                    <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                        Defaulting: High-to-Low Value Array
+                <div class="pt-4 border-t border-slate-100">
+                    <label class="relative flex items-center cursor-pointer select-none text-xs font-bold text-slate-700">
+                        <input type="checkbox" id="fav-toggle" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                        <span class="ms-2 flex items-center gap-1">
+                            <i class="fa-solid fa-heart text-rose-500"></i> Show Liked Only (<span id="fav-counter">0</span>)
+                        </span>
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Sort Results By</label>
+                    <select id="sort-picker" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="p-desc" selected>Purchase Price: High to Low</option>
+                        <option value="p-asc">Purchase Price: Low to High</option>
+                        <option value="c-asc">Commute Profile: Shortest Drive</option>
+                        <option value="m-asc">Total Monthly Outflow: Lowest First</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <section class="col-span-1 lg:col-span-3">
+            <div id="safety-banner" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6 shadow-sm relative overflow-hidden text-slate-300">
+                <div class="absolute right-0 bottom-0 text-slate-800/40 text-7xl translate-x-4 translate-y-4 pointer-events-none">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="flex items-start gap-4 pr-6">
+                    <div class="bg-blue-500/10 text-blue-400 p-2 rounded-xl border border-blue-500/20 mt-0.5">
+                        <i class="fa-solid fa-shield-circle-check text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-1 tracking-tight">Safe Neighborhood Selection Criteria</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            The municipal corridors represented below are curated using data-driven public safety benchmarks. Locations are indexed against standard metropolitan metrics, focusing on areas featuring a high density of master-planned developments, exceptionally low violent and property crime indicators, robust community municipal infrastructure, and stable school matrix zoning profiles. High-density, unmanaged commercial nodes or transient industrial hubs are explicitly filtered out of the baseline tracking array to safeguard long-term family asset stability.
+                        </p>
                     </div>
                 </div>
+                <button onclick="document.getElementById('safety-banner').remove()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-                <!-- Display Grid container -->
-                <div id="matrix-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Cards injected dynamically here -->
-                </div>
+            <div class="mb-4">
+                <p class="text-xs text-slate-500 font-bold tracking-wider uppercase">
+                    Active Pipeline Results: <span id="results-count" class="text-slate-900 font-black">0</span> Matches Found
+                </p>
+            </div>
 
-                <!-- Fallback empty state block component container -->
-                <div id="empty-state-fallback" class="hidden text-center py-16 bg-white rounded-xl border border-slate-200 p-8">
-                    <i class="fa-regular fa-folder-open text-slate-300 text-5xl mb-4"></i>
-                    <h3 class="text-lg font-bold text-slate-800">No Target Listings Intercepted</h3>
-                    <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">Try lowering constraints, adjusting your minimum bedroom count configuration, or switching off "Liked Properties Only" view options.</p>
-                </div>
-            </section>
-        </div>
+            <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+            <div id="empty-state" class="hidden text-center py-20 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+                <div class="text-slate-200 text-6xl mb-4"><i class="fa-solid fa-building-circle-exclamation"></i></div>
+                <h3 class="text-base font-bold text-slate-900 mb-1">No Properties Found Within Filter Range</h3>
+                <p class="text-slate-500 text-xs max-w-xs mx-auto">Adjust your price cap, travel criteria, or property type selections to pull more regional listings from the active JSON feed.</p>
+            </div>
+        </section>
     </main>
 
-    <!-- UI State Engine Logic Script Block Core -->
     <script>
-        let allListings = [];
-        let likedProperties = JSON.parse(localStorage.getItem('likedProperties')) || [];
+        let livePropertyFeed = [];
+        let activeMinBeds = 2;
+        let likedListings = JSON.parse(localStorage.getItem('likedAnaheimListings')) || [];
 
-        // DOM Element Cache Map Handles
-        const gridContainer = document.getElementById('matrix-grid');
-        const emptyState = document.getElementById('empty-state-fallback');
-        const priceSlider = document.getElementById('filter-price');
-        const priceDisplay = document.getElementById('price-display');
-        const bedsSelector = document.getElementById('filter-beds');
-        const mfgToggle = document.getElementById('filter-manufactured');
-        const favToggle = document.getElementById('filter-fav-only');
-        const cityContainer = document.getElementById('city-checkbox-container');
-        const clearBtn = document.getElementById('btn-clear');
-        
-        const countFiltered = document.getElementById('filtered-count');
-        const countTotal = document.getElementById('metric-total');
-        const countFavs = document.getElementById('metric-favorites');
-        const timestampNode = document.getElementById('sync-timestamp');
+        const INTEREST_RATE_APR = 0.0648; 
+        const DOWN_PAYMENT_FACTOR = 0.15;
+        const AMORTIZATION_MONTHS = 360;  
+        const ESTIMATED_SOCAL_TAX = 0.012; 
+        const ESTIMATED_HAZARD_INS = 100;  
 
-        // Dynamic Application Initialization Handler
-        async function initDashboard() {
+        async function fetchExternalDataset() {
             try {
                 const response = await fetch('listings.json');
-                if (!response.ok) throw new Error('Could not capture local JSON data payload.');
-                allListings = await response.json();
+                if (!response.ok) throw new Error(`Pipe missing.`);
+                livePropertyFeed = await response.json();
+                buildDynamicCityFilters();
+                renderInterface();
             } catch (err) {
-                console.error("Pipeline read execution error:", err);
-                allListings = [];
+                document.getElementById('card-grid').innerHTML = `<div class='col-span-full text-center text-xs font-bold text-red-600 p-6 bg-red-50 rounded-xl'>Pipeline Data Sync Pending.</div>`;
             }
-            
-            setTimestamp();
-            buildDynamicCityFilters();
-            updateGlobalMetrics();
-            evaluateFilterMatrix();
-            
-            // Wire Event Target Registries
-            priceSlider.addEventListener('input', (e) => {
-                priceDisplay.textContent = `$${parseInt(e.target.value).toLocaleString()}`;
-                evaluateFilterMatrix();
-            });
-            bedsSelector.addEventListener('change', evaluateFilterMatrix);
-            mfgToggle.addEventListener('change', evaluateFilterMatrix);
-            favToggle.addEventListener('change', evaluateFilterMatrix);
-            clearBtn.addEventListener('click', resetDefaults);
-        }
-
-        function setTimestamp() {
-            const now = new Date();
-            timestampNode.textContent = `LIVE LOCAL DATA REGISTRY SYNC: ${now.toLocaleDateString()} AT ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
         }
 
         function buildDynamicCityFilters() {
-            const uniqueCities = [...new Set(allListings.map(item => item.city))].sort();
-            
-            if (uniqueCities.length === 0) {
-                cityContainer.innerHTML = `<span class="text-slate-400 text-xs italic">No operational data tracked.</span>`;
-                return;
-            }
-
-            cityContainer.innerHTML = '';
-            uniqueCities.forEach(cityName => {
-                const row = document.createElement('label');
-                row.className = "flex items-center gap-2 py-0.5 cursor-pointer hover:text-slate-900 transition";
-                row.innerHTML = `
-                    <input type="checkbox" value="${cityName}" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 dynamic-city-cb">
-                    <span>${cityName}</span>
-                `;
-                cityContainer.appendChild(row);
-                row.querySelector('input').addEventListener('change', evaluateFilterMatrix);
+            const uniqueCities = [...new Set(livePropertyFeed.map(item => item.city))].sort();
+            const container = document.getElementById('city-checkbox-container');
+            if(uniqueCities.length === 0) return;
+            container.innerHTML = '';
+            uniqueCities.forEach(city => {
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 cursor-pointer py-0.5 select-none hover:text-slate-900";
+                label.innerHTML = `<input type="checkbox" value="${city}" checked class="city-cb rounded border-slate-300 text-blue-600 accent-blue-600"> <span>${city}</span>`;
+                container.appendChild(label);
+                label.querySelector('input').addEventListener('change', renderInterface);
             });
         }
 
-        function updateGlobalMetrics() {
-            countTotal.textContent = allListings.length;
-            countFavs.textContent = likedProperties.length;
-        }
+        defCalculation = (price, hoaFee) => {
+            const principalLoanValue = price * (1 - DOWN_PAYMENT_FACTOR);
+            const monthlyPeriodicInt = INTEREST_RATE_APR / 12;
+            const principalAndInterest = (principalLoanValue * monthlyPeriodicInt * Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS)) / (Math.pow(1 + monthlyPeriodicInt, AMORTIZATION_MONTHS) - 1);
+            const monthlyTaxAllocation = (price * ESTIMATED_SOCAL_TAX) / 12;
+            return {
+                pni: Math.round(principalAndInterest),
+                taxes: Math.round(monthlyTaxAllocation),
+                total: Math.round(principalAndInterest + monthlyTaxAllocation + ESTIMATED_HAZARD_INS + hoaFee)
+            };
+        };
 
-        function toggleLike(zpid) {
-            const index = likedProperties.indexOf(zpid);
-            if (index > -1) {
-                likedProperties.splice(index, 1);
-            } else {
-                likedProperties.push(zpid);
-            }
-            localStorage.setItem('likedProperties', JSON.stringify(likedProperties));
-            updateGlobalMetrics();
-            evaluateFilterMatrix();
-        }
+        window.toggleLikeListing = (id) => {
+            const stringId = String(id);
+            const idx = likedListings.indexOf(stringId);
+            if (idx > -1) likedListings.splice(idx, 1);
+            else likedListings.push(stringId);
+            localStorage.setItem('likedAnaheimListings', JSON.stringify(likedListings));
+            renderInterface();
+        };
 
-        function resetDefaults() {
-            priceSlider.value = 750000;
-            priceDisplay.textContent = "$750,000";
-            bedsSelector.value = "2";
-            mfgToggle.checked = true;
-            favToggle.checked = false;
-            
-            document.querySelectorAll('.dynamic-city-cb').forEach(cb => cb.checked = true);
-            evaluateFilterMatrix();
-        }
+        function renderInterface() {
+            const currentPriceMax = parseInt(document.getElementById('price-slider').value);
+            const currentCommuteMax = parseInt(document.getElementById('commute-slider').value);
+            const selectedSortOrder = document.getElementById('sort-picker').value;
+            const showFavoritesOnly = document.getElementById('fav-toggle').checked;
 
-        function getPropertyDetails(item) {
-            // Safe fallback compilation to handle missing properties and resolve the "undefined" label bug
-            const rawType = item.propertyType || item.homeType || 'House';
-            const lowerType = rawType.toLowerCase();
-            
-            let cleanLabel = rawType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            let iconClass = 'fa-house'; 
-            let bgStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-100/70';
+            const checkedBoxes = Array.from(document.querySelectorAll('.type-chk:checked')).map(chk => chk.value);
+            const checkedCities = Array.from(document.querySelectorAll('.city-cb:checked')).map(cb => cb.value);
 
-            if (item.isManufactured || lowerType.includes('manufactured') || lowerType.includes('mobile')) {
-                cleanLabel = "Manufactured";
-                iconClass = 'fa-caravan';
-                bgStyle = 'bg-amber-50 text-amber-600 border border-amber-100/70';
-            } else if (lowerType.includes('condo') || lowerType.includes('townhouse') || lowerType.includes('townhome')) {
-                iconClass = 'fa-building-user';
-                bgStyle = 'bg-sky-50 text-sky-600 border border-sky-100/70';
-            } else if (lowerType.includes('apt') || lowerType.includes('apartment') || lowerType.includes('multi')) {
-                iconClass = 'fa-building';
-                bgStyle = 'bg-purple-50 text-purple-600 border border-purple-100/70';
-            }
+            document.getElementById('fav-counter').innerText = likedListings.length;
 
-            return { label: cleanLabel, icon: iconClass, bg: bgStyle };
-        }
-
-        function evaluateFilterMatrix() {
-            const maxPrice = parseInt(priceSlider.value);
-            const minBeds = parseInt(bedsSelector.value);
-            const includeMfg = mfgToggle.checked;
-            const showOnlyFavs = favToggle.checked;
-            
-            const checkedCities = Array.from(document.querySelectorAll('.dynamic-city-cb:checked')).map(cb => cb.value);
-
-            let filteredResults = allListings.filter(item => {
-                if (item.price > maxPrice) return false;
-                if (item.beds < minBeds) return false;
-                if (checkedCities.length > 0 && !checkedCities.includes(item.city)) return false;
-                if (!includeMfg && item.isManufactured) return false;
-                if (showOnlyFavs && !likedProperties.includes(item.zpid)) return false;
+            let filteredArray = livePropertyFeed.filter(property => {
+                if (showFavoritesOnly && !likedListings.includes(String(property.id))) return false;
+                if (property.price > currentPriceMax) return false;
+                if (property.commute > currentCommuteMax) return false;
+                if (property.beds < activeMinBeds) return false;
+                if (checkedCities.length > 0 && !checkedCities.includes(property.city)) return false;
+                
+                const normalizedType = (property.type || "").toLowerCase();
+                const matchesAnyCheckedType = checkedBoxes.some(typeKey => normalizedType.includes(typeKey));
+                if (!matchesAnyCheckedType) return false;
                 return true;
             });
 
-            filteredResults.sort((a, b) => b.price - a.price);
-            renderDisplayCards(filteredResults);
-        }
+            filteredArray = filteredArray.map(node => {
+                const calculations = defCalculation(node.price, node.hoa);
+                return { ...node, calculations };
+            });
 
-        function renderDisplayCards(data) {
-            gridContainer.innerHTML = '';
-            countFiltered.textContent = data.length;
+            if (selectedSortOrder === 'p-asc') filteredArray.sort((a, b) => a.price - b.price);
+            if (selectedSortOrder === 'p-desc') filteredArray.sort((a, b) => b.price - a.price);
+            if (selectedSortOrder === 'c-asc') filteredArray.sort((a, b) => a.commute - b.commute);
+            if (selectedSortOrder === 'm-asc') filteredArray.sort((a, b) => a.calculations.total - b.calculations.total);
 
-            if (data.length === 0) {
-                gridContainer.classList.add('hidden');
-                emptyState.classList.remove('hidden');
+            document.getElementById('results-count').innerText = filteredArray.length;
+            const targetGridWrapper = document.getElementById('card-grid');
+            const zeroStateContainer = document.getElementById('empty-state');
+            
+            targetGridWrapper.innerHTML = "";
+            if (filteredArray.length === 0) {
+                zeroStateContainer.classList.remove('hidden');
                 return;
+            } else {
+                zeroStateContainer.classList.add('hidden');
             }
 
-            gridContainer.classList.remove('hidden');
-            emptyState.classList.add('hidden');
+            filteredArray.forEach(listing => {
+                const itemContainerNode = document.createElement('div');
+                itemContainerNode.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-slate-300 transition duration-150 relative";
+                
+                let iconClass = 'fa-solid fa-building';
+                let bgStyle = 'bg-sky-50 text-sky-600 border border-sky-100/70';
+                const lowerType = (listing.type || "").toLowerCase();
 
-            data.forEach(item => {
-                const isLiked = likedProperties.includes(item.zpid);
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition duration-200 flex flex-col relative";
-                
-                // Resolve details and layout vectors
-                const meta = getPropertyDetails(item);
-                
-                let mediaElementHtml = '';
-                if (item.imgSrc && item.imgSrc.trim() !== '') {
-                    mediaElementHtml = `<img src="${item.imgSrc}" alt="Property Display" class="w-full h-full object-cover">`;
-                } else {
-                    mediaElementHtml = `
-                        <div class="w-full h-full flex flex-col items-center justify-center gap-2 ${meta.bg}">
-                            <i class="fa-solid ${meta.icon} text-5xl opacity-85"></i>
-                            <span class="text-[10px] uppercase font-bold tracking-wider opacity-60">No Live Photo Feed</span>
-                        </div>
-                    `;
+                if (listing.isManufactured || lowerType.includes('manufactured') || lowerType.includes('mobile')) {
+                    iconClass = 'fa-solid fa-caravan';
+                    bgStyle = 'bg-amber-50 text-amber-600 border border-amber-100/70';
+                } else if (lowerType.includes('single') || lowerType.includes('house')) {
+                    iconClass = 'fa-solid fa-house font-black';
+                    bgStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-100/70';
                 }
 
-                card.innerHTML = `
-                    <div class="relative h-48 bg-slate-100 overflow-hidden shrink-0">
-                        ${mediaElementHtml}
-                        <div class="absolute top-3 right-3 z-10">
-                            <button onclick="toggleLike('${item.zpid}')" class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center cursor-pointer shadow-sm text-lg hover:bg-white transition ${isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}">
-                                <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
-                            </button>
-                        </div>
-                        <div class="absolute bottom-3 left-3 bg-slate-900/70 backdrop-blur-xs text-white text-xs px-2 py-1 rounded font-semibold tracking-wide uppercase">
-                            ${meta.label}
-                        </div>
+                const isItemLiked = likedListings.includes(String(listing.id));
+                const heartButtonIconClass = isItemLiked ? 'fa-solid fa-heart text-rose-500 scale-110' : 'fa-regular fa-heart text-slate-400 hover:text-rose-500';
+
+                let mediaHTML = `<div class="w-full h-full flex flex-col items-center justify-center gap-2 ${bgStyle}"><i class="${iconClass} text-5xl opacity-85"></i></div>`;
+                if (listing.imgSrc && listing.imgSrc.trim() !== '') {
+                    mediaHTML = `<img src="${listing.imgSrc}" alt="Real Estate Image" class="w-full h-full object-cover">`;
+                }
+
+                itemContainerNode.innerHTML = `
+                    <div class="relative h-44 bg-slate-100/70 flex items-center justify-center border-b border-slate-100">
+                        <button onclick="window.toggleLikeListing('${listing.id}')" class="absolute top-3 right-3 bg-white/90 hover:bg-white text-slate-500 w-7 h-7 rounded-xl transition duration-150 shadow-sm flex items-center justify-center z-10 backdrop-blur-sm border border-slate-200/40">
+                            <i class="${heartButtonIconClass} text-xs transition duration-100"></i>
+                        </button>
+                        ${mediaHTML}
+                        <span class="absolute top-3 left-3 bg-slate-900/90 text-white text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md">${listing.type}</span>
+                        <span class="absolute bottom-3 right-3 bg-slate-900/90 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-car text-blue-500 text-[10px]"></i> ${listing.commute} min drive to Anaheim
+                        </span>
                     </div>
-                    
-                    <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div class="p-5 flex-1 flex flex-col justify-between">
                         <div>
-                            <div class="text-2xl font-black text-slate-900">$${item.price.toLocaleString()}</div>
-                            <div class="flex items-center gap-4 text-sm font-semibold text-slate-500 mt-1">
-                                <span><i class="fa-solid fa-bed text-slate-400"></i> ${item.beds} Bed${item.beds !== 1 ? 's' : ''}</span>
-                                <span><i class="fa-solid fa-bath text-slate-400"></i> ${item.baths} Bath${item.baths !== 1 ? 's' : ''}</span>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h3 class="font-bold text-base text-slate-900 truncate pr-8 tracking-tight">${listing.address}</h3>
+                                <p class="text-base font-black text-slate-900">$${listing.price.toLocaleString()}</p>
                             </div>
-                            <p class="text-sm text-slate-600 mt-3 font-medium line-clamp-1"><i class="fa-solid fa-location-dot text-slate-400 text-xs"></i> ${item.address}</p>
-                            <span class="inline-block bg-slate-100 text-slate-700 font-bold text-xs px-2.5 py-0.5 rounded-full mt-2">${item.city} Tracking Hub</span>
+                            <p class="text-xs font-medium text-slate-400 mb-4">${listing.city}, CA</p>
+                            
+                            <div class="flex gap-4 border-y border-slate-100 py-2.5 mb-4 text-xs font-bold text-slate-600">
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-bed text-slate-400"></i> ${listing.beds}bd</span>
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-bath text-slate-400"></i> ${listing.baths}ba</span>
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-slate-400"></i> $${listing.hoa}/mo HOA</span>
+                            </div>
+
+                            <div class="bg-slate-50/80 rounded-xl p-3.5 text-xs mb-4 space-y-1.5 border border-slate-100">
+                                <div class="flex justify-between text-slate-500"><span>P&I Financed Payment:</span><span class="font-semibold text-slate-800">$${listing.calculations.pni.toLocaleString()}/mo</span></div>
+                                <div class="flex justify-between text-slate-500"><span>Taxes & Hazard Ins (Est):</span><span class="font-semibold text-slate-800">$${(listing.calculations.taxes + ESTIMATED_HAZARD_INS).toLocaleString()}/mo</span></div>
+                                <div class="flex justify-between text-slate-500"><span>HOA Association Dues:</span><span class="font-semibold text-slate-800">$${listing.hoa.toLocaleString()}/mo</span></div>
+                                <div class="flex justify-between border-t border-dashed border-slate-200 pt-2 mt-2 text-sm"><span class="font-bold text-slate-900">Total Monthly Cost:</span><span class="font-black text-emerald-600">$${listing.calculations.total.toLocaleString()}/mo</span></div>
+                            </div>
                         </div>
-                        
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                            <span class="text-emerald-600 font-bold text-xs bg-emerald-50 px-2 py-1 rounded-sm border border-emerald-100/50 flex items-center gap-1">
-                                <i class="fa-solid fa-shield-halved"></i> Premium Subdiv. Node
-                            </span>
-                            <a href="${item.url}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
-                                Inspect Matrix Listing <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                            </a>
-                        </div>
+                        <a href="${listing.link}" target="_blank" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-center py-2.5 rounded-xl text-xs font-bold tracking-wide transition flex items-center justify-center gap-1.5">
+                            MLS Property Sheet <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-60"></i>
+                        </a>
                     </div>
                 `;
-                gridContainer.appendChild(card);
+                targetGridWrapper.appendChild(itemContainerNode);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', initDashboard);
+        document.getElementById('price-slider').addEventListener('input', (e) => {
+            document.getElementById('price-lbl').innerText = `$${parseInt(e.target.value).toLocaleString()}`;
+            renderInterface();
+        });
+        document.getElementById('commute-slider').addEventListener('input', (e) => {
+            document.getElementById('commute-lbl').innerText = `${e.target.value} mins`;
+            renderInterface();
+        });
+        document.querySelectorAll('.type-chk').forEach(chk => chk.addEventListener('change', renderInterface));
+        document.getElementById('sort-picker').addEventListener('change', renderInterface);
+        document.getElementById('fav-toggle').addEventListener('change', renderInterface);
+
+        document.querySelectorAll('.bed-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.bed-btn').forEach(b => b.className = "bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition");
+                e.target.className = "bed-btn py-2 px-3 text-xs font-bold rounded-xl border border-blue-600 bg-blue-50 text-blue-700 transition";
+                activeMinBeds = parseInt(e.target.dataset.beds);
+                renderInterface();
+            });
+        });
+
+        document.getElementById('reset-filters').addEventListener('click', () => {
+            document.getElementById('price-slider').value = 750000;
+            document.getElementById('price-lbl').innerText = "$750,000";
+            document.getElementById('commute-slider').value = 60;
+            document.getElementById('commute-lbl').innerText = "60 mins";
+            document.getElementById('fav-toggle').checked = false;
+            document.querySelectorAll('.type-chk').forEach(chk => chk.checked = (chk.value !== 'manufactured'));
+            document.querySelectorAll('.city-cb').forEach(cb => cb.checked = true);
+            document.getElementById('sort-picker').value = 'p-desc';
+            document.querySelector('[data-beds="2"]').click();
+            renderInterface();
+        });
+
+        window.onload = fetchExternalDataset;
     </script>
 </body>
 </html>
